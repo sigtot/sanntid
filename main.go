@@ -1,79 +1,95 @@
 package main
 
 import (
-	"flag"
 	"fmt"
-	"github.com/sigtot/Network-go/network/bcast"
-	"github.com/sigtot/Network-go/network/localip"
-	"github.com/sigtot/Network-go/network/peers"
-	"os"
+	"github.com/TTK4145/driver-go/elevio"
+	"reflect"
 	"time"
 )
 
-type HelloMsg struct {
-	Message string
-	Iter    int
+const numFloors = 4
+
+type Order struct {
+	Floor      int
+	ButtonType elevio.ButtonType
 }
 
-func main () {
-	// Our id can be anything. Here we pass it on the command line, using
-	//  `go run main.go -id=our_id`
-	var id string
-	flag.StringVar(&id, "id", "", "id of this peer")
-	flag.Parse()
+func main() {
+	var orders []Order
 
-	// ... or alternatively, we can use the local IP address.
-	// (But since we can run multiple programs on the same PC, we also append the
-	//  process ID)
-	if id == "" {
-		localIP, err := localip.LocalIP()
-		if err != nil {
-			fmt.Println(err)
-			localIP = "DISCONNECTED"
-		}
-		id = fmt.Sprintf("peer-%s-%d", localIP, os.Getpid())
-	}
+	drvButtons := make(chan elevio.ButtonEvent)
+	drvFloors := make(chan int)
+	drvObstr := make(chan bool)
+	drvStop := make(chan bool)
 
-	// We make a channel for receiving updates on the id's of the peers that are
-	//  alive on the network
-	peerUpdateCh := make(chan peers.PeerUpdate)
-	// We can disable/enable the transmitter after it has been started.
-	// This could be used to signal that we are somehow "unavailable".
-	peerTxEnable := make(chan bool)
-	go peers.Transmitter(15647, id, peerTxEnable)
-	go peers.Receiver(15647, peerUpdateCh)
+	fmt.Println("Starting elevator")
+	elevio.Init("127.0.0.1:15657", numFloors)
+	go elevio.PollButtons(drvButtons)
+	go elevio.PollFloorSensor(drvFloors)
+	go elevio.PollObstructionSwitch(drvObstr)
+	go elevio.PollStopButton(drvStop)
 
-	// We make channels for sending and receiving our custom data types
-	helloTx := make(chan HelloMsg)
-	helloRx := make(chan HelloMsg)
-	// ... and start the transmitter/receiver pair on some port
-	// These functions can take any number of channels! It is also possible to
-	//  start multiple transmitters/receivers on the same port.
-	go bcast.Transmitter(16569, helloTx)
-	go bcast.Receiver(16569, helloRx)
+	d := elevio.MD_Up
+	elevio.SetMotorDirection(d)
 
-	// The example message. We just send one of these every second.
-	go func() {
-		helloMsg := HelloMsg{"Hello from " + id, 0}
-		for {
-			helloMsg.Iter++
-			helloTx <- helloMsg
-			time.Sleep(1 * time.Second)
-		}
-	}()
-
-	fmt.Println("Started")
 	for {
 		select {
-		case p := <-peerUpdateCh:
-			fmt.Printf("Peer update:\n")
-			fmt.Printf("  Peers:    %q\n", p.Peers)
-			fmt.Printf("  New:      %q\n", p.New)
-			fmt.Printf("  Lost:     %q\n", p.Lost)
+		case a := <-drvButtons:
+			fmt.Printf("%+v\n", a)
+			elevio.SetButtonLamp(a.Button, a.Floor, true)
+			newOrder := Order{
+				Floor:      a.Floor,
+				ButtonType: a.Button,
+			}
+			if !OrderExists(orders, newOrder) {
+				orders = append(orders, newOrder)
+			}
+			fmt.Printf("Orders: %x\n", orders)
+		case a := <-drvFloors:
+			fmt.Printf("%+v\n", a)
+			if OrderExists(orders, Order{Floor: a, ButtonType: elevio.BT_Cab}) || OrderExists(orders, Order{Floor: a, ButtonType: MDToBT(d)}) {
+				ServeOrder()
+				orders = DeleteOrder(orders, a, MDToBT(d))
+				fmt.Printf("Orders: %x\n", orders)
+			}
+			if a == numFloors-1 {
+				d = elevio.MD_Down
+			} else if a == 0 {
+				d = elevio.MD_Up
+			}
 
-		case a := <-helloRx:
-			fmt.Printf("Received: %#v\n", a)
+			elevio.SetMotorDirection(d)
 		}
 	}
+}
 
+func OrderExists(orders []Order, order Order) bool {
+	for i := 0; i < len(orders); i++ {
+		if reflect.DeepEqual(orders[i], order) {
+			return true
+		}
+	}
+	return false
+}
+
+func ServeOrder() {
+	elevio.SetMotorDirection(elevio.MD_Stop)
+	elevio.SetDoorOpenLamp(true)
+	time.Sleep(time.Second * 3)
+	elevio.SetDoorOpenLamp(false)
+}
+
+func DeleteOrder(orders []Order, floor int, buttonType elevio.ButtonType) []Order {
+	for i := 0; i < len(orders); i++ {
+		if orders[i].Floor == floor && (orders[i].ButtonType == buttonType || orders[i].ButtonType == elevio.BT_Cab) {
+			orders = append(orders[:i], orders[i+1:]...)
+			elevio.SetButtonLamp(buttonType, floor, false)
+			elevio.SetButtonLamp(elevio.BT_Cab, floor, false)
+		}
+	}
+	return orders
+}
+
+func MDToBT(motorDir elevio.MotorDirection) elevio.ButtonType {
+	return elevio.ButtonType(int(motorDir))
 }
