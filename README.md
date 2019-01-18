@@ -21,6 +21,7 @@ Storing data to disk can be problematic in the case of a power outage. In such a
 
 The home directories on the lab computers use [ext3](https://en.wikipedia.org/wiki/Ext3). This is a [journaled](https://en.wikipedia.org/wiki/Journaling_file_system) filesystem, which means storage operations can be considered atomic. A journaled filesystem accomplishes atomicity by writing any changes to a journal before applying them. This way, if a power loss occurs during an operation, the recovery process can check the journal for the changes and replay any failed ones. This process is known as [write-ahead logging (WAL)](https://en.wikipedia.org/wiki/Write-ahead_logging).
 
-* Etcd has a wal implementation: [github.com/etcd-io/etcd/tree/master/wal](https://github.com/etcd-io/etcd/tree/master/wal)
+* Etcd has a WAL implementation: [github.com/etcd-io/etcd/tree/master/wal](https://github.com/etcd-io/etcd/tree/master/wal)
 * [Stackoverflow: Losing Power While Writing to a File](https://stackoverflow.com/questions/16835529/losing-power-while-writing-to-a-file)
+* [The ARIES wikipedia page](https://en.wikipedia.org/wiki/Algorithms_for_Recovery_and_Isolation_Exploiting_Semantics) has a section on checkpoints in journal logs
 
