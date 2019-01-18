@@ -25,3 +25,8 @@ The home directories on the lab computers use [ext3](https://en.wikipedia.org/wi
 * [Stackoverflow: Losing Power While Writing to a File](https://stackoverflow.com/questions/16835529/losing-power-while-writing-to-a-file)
 * [The ARIES wikipedia page](https://en.wikipedia.org/wiki/Algorithms_for_Recovery_and_Isolation_Exploiting_Semantics) has a section on checkpoints in journal logs
 
+### Raft
+#### Network partitions
+During a network partition, the network gets separated into two parts. In this event, a new leader is elected in the majority network. In the minority partition, no state changes are accepted, since a majority is not in place. The minority partition must therefore either a) be put out of service or b) continue operating in a safe mode, which does not rely on the network. We can for instance have a mode in which the node that receives the order always delivers it too. When a safe mode state is finished, we must wait until all it's operations have been completed, as these will completely disappear from the actual distributed state log.
+
+Visual go-through of the raft algorithm: [thesecretlivesofdata.com/raft](http://thesecretlivesofdata.com/raft/)
