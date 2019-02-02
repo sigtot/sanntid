@@ -1,6 +1,8 @@
 package hotqueue
 
-import "time"
+import (
+	"time"
+)
 
 type HotQueue struct {
 	queue []Item
