@@ -6,6 +6,7 @@ import (
 )
 
 /*
+HotChan is a channel with an In channel and an Out channel.
 Items put into the hc.In channel will expire after their time to live (TTL) runs out, but will be available in FIFO
 order from the hc.Out channel until then. The TTL countdown will run even if the items are not currently inside the
 channel.
@@ -18,7 +19,7 @@ type HotChan struct {
 	status  statusMap
 }
 
-// Items to be held in the hot channel. Needs a Val and a TTL.
+// Item to be held in the hot channel. Needs a Val and a TTL.
 type Item struct {
 	Val interface{}
 	TTL time.Duration
@@ -30,7 +31,7 @@ type statusMap struct {
 	mu     sync.Mutex
 }
 
-// Initializes channels and starts goroutines managing this hot channel
+// Start the HotQueue. Initializes channels and starts goroutines managing this hot channel
 func (c *HotChan) Start() {
 	c.In = make(chan Item, 1024)
 	c.Out = make(chan Item, 1024)
@@ -40,7 +41,7 @@ func (c *HotChan) Start() {
 	go c.manage()
 }
 
-// Sends a stop signal to the goroutine managing the hot channel
+// Stop sends a stop signal to the goroutine managing the hot channel
 func (c *HotChan) Stop() {
 	c.quit <- 0
 }
@@ -63,13 +64,13 @@ func (c *HotChan) manage() {
 			}
 			c.status.mu.Unlock()
 			c.Out <- item
-		case killId := <-c.toPurge:
+		case killID := <-c.toPurge:
 			spared := make(chan Item, 1024)
 		L:
 			for {
 				select {
 				case item := <-c.Out:
-					if item.id != killId {
+					if item.id != killID {
 						spared <- item
 					} else {
 						continue L

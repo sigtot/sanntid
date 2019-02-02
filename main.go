@@ -9,13 +9,13 @@ import (
 
 const numFloors = 4
 
-type Order struct {
+type order struct {
 	Floor      int
 	ButtonType elevio.ButtonType
 }
 
 func main() {
-	var orders []Order
+	var orders []order
 
 	drvButtons := make(chan elevio.ButtonEvent)
 	drvFloors := make(chan int)
@@ -37,19 +37,19 @@ func main() {
 		case a := <-drvButtons:
 			fmt.Printf("%+v\n", a)
 			elevio.SetButtonLamp(a.Button, a.Floor, true)
-			newOrder := Order{
+			newOrder := order{
 				Floor:      a.Floor,
 				ButtonType: a.Button,
 			}
-			if !OrderExists(orders, newOrder) {
+			if !orderExists(orders, newOrder) {
 				orders = append(orders, newOrder)
 			}
 			fmt.Printf("Orders: %x\n", orders)
 		case a := <-drvFloors:
 			fmt.Printf("%+v\n", a)
-			if OrderExists(orders, Order{Floor: a, ButtonType: elevio.BT_Cab}) || OrderExists(orders, Order{Floor: a, ButtonType: MDToBT(d)}) {
-				ServeOrder()
-				orders = DeleteOrder(orders, a, MDToBT(d))
+			if orderExists(orders, order{Floor: a, ButtonType: elevio.BT_Cab}) || orderExists(orders, order{Floor: a, ButtonType: mdToBT(d)}) {
+				serveOrder()
+				orders = deleteOrder(orders, a, mdToBT(d))
 				fmt.Printf("Orders: %x\n", orders)
 			}
 			if a == numFloors-1 {
@@ -63,7 +63,7 @@ func main() {
 	}
 }
 
-func OrderExists(orders []Order, order Order) bool {
+func orderExists(orders []order, order order) bool {
 	for i := 0; i < len(orders); i++ {
 		if reflect.DeepEqual(orders[i], order) {
 			return true
@@ -72,14 +72,14 @@ func OrderExists(orders []Order, order Order) bool {
 	return false
 }
 
-func ServeOrder() {
+func serveOrder() {
 	elevio.SetMotorDirection(elevio.MD_Stop)
 	elevio.SetDoorOpenLamp(true)
 	time.Sleep(time.Second * 3)
 	elevio.SetDoorOpenLamp(false)
 }
 
-func DeleteOrder(orders []Order, floor int, buttonType elevio.ButtonType) []Order {
+func deleteOrder(orders []order, floor int, buttonType elevio.ButtonType) []order {
 	for i := 0; i < len(orders); i++ {
 		if orders[i].Floor == floor && (orders[i].ButtonType == buttonType || orders[i].ButtonType == elevio.BT_Cab) {
 			orders = append(orders[:i], orders[i+1:]...)
@@ -90,6 +90,6 @@ func DeleteOrder(orders []Order, floor int, buttonType elevio.ButtonType) []Orde
 	return orders
 }
 
-func MDToBT(motorDir elevio.MotorDirection) elevio.ButtonType {
+func mdToBT(motorDir elevio.MotorDirection) elevio.ButtonType {
 	return elevio.ButtonType(int(motorDir))
 }
