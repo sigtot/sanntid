@@ -5,49 +5,52 @@ import (
 	"time"
 )
 
+var direction elevio.MotorDirection
+var position float64
+
 type State struct {
 	Dir elevio.MotorDirection
 	Pos float64
 }
 
-func StartElev(goal <-chan int, arrived chan<- int, state chan<- State) {
+func StartElev(goal <-chan int, arrived chan<- int) {
 	floorSensorChan := make(chan int)
-	stateChange := make(chan int)
 	elevio.PollFloorSensor(floorSensorChan)
 	var goalFloor int
-	var dir elevio.MotorDirection
-	var pos float64
 
 	for {
 		select {
 		case goalFloor = <-goal:
-			dir = getDirection(pos, goalFloor)
-			elevio.SetMotorDirection(dir)
-			stateChange <- 1
-		case pos = <-floorSensorChan:
-			elevio.SetFloorIndicator(int(pos))
-			stateChange <- 1
-			if int(pos) == goalFloor {
+			direction = calcDirection(position, goalFloor)
+			elevio.SetMotorDirection(direction)
+		case position = <-floorSensorChan:
+			elevio.SetFloorIndicator(int(position))
+			if int(position) == goalFloor {
 				func() {
-					dir = elevio.MD_Stop
-					elevio.SetMotorDirection(dir)
+					direction = elevio.MD_Stop
+					elevio.SetMotorDirection(direction)
 					elevio.SetDoorOpenLamp(true)
 					defer elevio.SetDoorOpenLamp(false)
 					arrived <- goalFloor
 					time.Sleep(3 * time.Second)
 				}()
-			} else if dir == elevio.MD_Up {
-				pos += 0.5
-			} else if dir == elevio.MD_Down {
-				pos -= 0.5
+			} else if direction == elevio.MD_Up {
+				position += 0.5
+			} else if direction == elevio.MD_Down {
+				position -= 0.5
 			}
-		case <-stateChange:
-			// TODO: Don't do this. Do https://stackoverflow.com/questions/27236827/idiomatic-way-to-make-a-request-response-communication-using-channels
-			state <- State{Dir: dir, Pos: pos}
 		}
 	}
 }
 
-func getDirection(pos float64, goalFloor int) elevio.MotorDirection {
+func calcDirection(pos float64, goalFloor int) elevio.MotorDirection {
 	return elevio.MD_Stop
+}
+
+func GetDirection() elevio.MotorDirection {
+	return direction
+}
+
+func GetPosition() float64 {
+	return position
 }
