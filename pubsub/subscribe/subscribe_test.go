@@ -16,7 +16,8 @@ type Dude struct {
 func TestSubscriber(t *testing.T) {
 	// Listen for published data
 	receivedBufs := make(chan []byte, 1024)
-	go StartSubscriber(41000, 51000, receivedBufs)
+	httpPort := FindAvailPort()
+	go StartSubscriber(41000, receivedBufs, httpPort)
 
 	// Publish
 	myDude := Dude{WeekDay: "Wednesday"}
@@ -24,7 +25,7 @@ func TestSubscriber(t *testing.T) {
 	if err != nil {
 		t.Fatal("Could not marshal json")
 	}
-	resp, err := http.Post("http://localhost:51000", "application/json", bytes.NewBuffer(myDudeJson))
+	resp, err := http.Post(fmt.Sprintf("http://localhost:%d", httpPort), "application/json", bytes.NewBuffer(myDudeJson))
 	if err != nil {
 		fmt.Printf("Got response %x %x \n", resp.StatusCode, resp.Status)
 	}

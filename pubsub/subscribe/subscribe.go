@@ -3,8 +3,10 @@ package subscribe
 import (
 	"fmt"
 	"io/ioutil"
+	"math/rand"
 	"net"
 	"net/http"
+	"strconv"
 	"time"
 )
 
@@ -13,19 +15,37 @@ const (
 	CatsPublishPort
 )
 
+func FindAvailPort() (port int) {
+	for {
+		port = rand.Intn(40000) + 10000
+		conn, err := net.Listen("tcp", net.JoinHostPort("", strconv.Itoa(port)))
+		if err != nil {
+			panic(err)
+		}
+		if conn != nil {
+			err = conn.Close()
+			if err != nil {
+				panic(err)
+			}
+			break
+		}
+	}
+	return port
+}
+
 // StartSubscriber starts a subscriber with a given discoveryPort and publishPort.
 // Received items are made available in the ReceivedBufs channel.
-func StartSubscriber(discoveryPort int, publishPort int, receivedBufs chan []byte) {
+func StartSubscriber(discoveryPort int, receivedBufs chan []byte, port int) {
 	go func() {
 		http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 			subHandler(w, r, receivedBufs)
 		})
-		if err := http.ListenAndServe(fmt.Sprintf(":%d", publishPort), nil); err != nil {
+		if err := http.ListenAndServe(fmt.Sprintf(":%d", port), nil); err != nil {
 			panic(err)
 		}
 	}()
 	time.Sleep(500 * time.Millisecond) // Wait for server to start
-	go sendAliveSignal(discoveryPort, publishPort)
+	go sendAliveSignal(discoveryPort, port)
 }
 
 func subHandler(w http.ResponseWriter, r *http.Request, receivedBufs chan []byte) {
