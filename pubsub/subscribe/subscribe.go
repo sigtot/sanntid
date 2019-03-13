@@ -10,12 +10,7 @@ import (
 	"time"
 )
 
-const (
-	OrderPublishPort = 51000 + iota
-	CatsPublishPort
-)
-
-func FindAvailPort() (port int) {
+func findAvailPort() (port int) {
 	for {
 		port = rand.Intn(40000) + 10000
 		conn, err := net.Listen("tcp", net.JoinHostPort("", strconv.Itoa(port)))
@@ -34,18 +29,22 @@ func FindAvailPort() (port int) {
 }
 
 // StartSubscriber starts a subscriber with a given discoveryPort and publishPort.
-// Received items are made available in the ReceivedBufs channel.
-func StartSubscriber(discoveryPort int, receivedBufs chan []byte, port int) {
+// Received items are made available in the returned channel.
+// The returned httpPort is the port of the subscriber's http server
+func StartSubscriber(discoveryPort int) (receivedBufs chan []byte, httpPort int) {
+	receivedBufs = make(chan []byte, 1024)
+	httpPort = findAvailPort()
 	go func() {
 		http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 			subHandler(w, r, receivedBufs)
 		})
-		if err := http.ListenAndServe(fmt.Sprintf(":%d", port), nil); err != nil {
+		if err := http.ListenAndServe(fmt.Sprintf(":%d", httpPort), nil); err != nil {
 			panic(err)
 		}
 	}()
 	time.Sleep(500 * time.Millisecond) // Wait for server to start
-	go sendAliveSignal(discoveryPort, port)
+	go sendAliveSignal(discoveryPort, httpPort)
+	return receivedBufs, httpPort
 }
 
 func subHandler(w http.ResponseWriter, r *http.Request, receivedBufs chan []byte) {

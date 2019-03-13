@@ -8,7 +8,7 @@ import (
 /*
 HotChan is a channel with an In channel and an Out channel.
 Items put into the hc.In channel will expire after their time to live (TTL) runs out, but will be available in FIFO
-order from the hc.Out channel until then. The TTL countdown will run even if the items are not currently inside the
+call from the hc.Out channel until then. The TTL countdown will run even if the items are not currently inside the
 channel.
 */
 type HotChan struct {

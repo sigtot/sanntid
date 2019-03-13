@@ -1,6 +1,8 @@
 package pubsub
 
 const (
-	OrderDiscoveryPort = 41000 + iota
-	CatsDiscoveryPort
+	SalesDiscoveryPort = 41000 + iota
+	SoldToDiscoveryPort
+	BidDiscoveryPort
+	AckDiscoveryPort
 )
