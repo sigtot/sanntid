@@ -28,16 +28,9 @@ const AckWaitDuration = time.Millisecond * 10
 func StartSelling(newCalls chan types.Call) {
 	state := Idle
 
-	// Start sales publisher
 	forSalePubChan := publish.StartPublisher(pubsub.SalesDiscoveryPort)
-
-	// Start sold to publisher
 	soldToPubChan := publish.StartPublisher(pubsub.SoldToDiscoveryPort)
-	<-time.After(30 * time.Millisecond)
-	// Start bid subscriber
 	bidSubChan, _ := subscribe.StartSubscriber(pubsub.BidDiscoveryPort)
-
-	// Start ack subscriber
 	ackSubChan, _ := subscribe.StartSubscriber(pubsub.AckDiscoveryPort)
 
 	forSale := hotchan.HotChan{}
