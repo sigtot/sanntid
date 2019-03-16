@@ -5,4 +5,5 @@ const (
 	SoldToDiscoveryPort
 	BidDiscoveryPort
 	AckDiscoveryPort
+	OrderDeliveredDiscoveryPort
 )
