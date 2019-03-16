@@ -19,16 +19,10 @@ func TestSeller(t *testing.T) {
 	newCalls := make(chan types.Call)
 	go StartSelling(newCalls)
 
-	bidPublishChan := make(chan []byte, 1024)
-	go publish.StartPublisher(pubsub.BidDiscoveryPort, bidPublishChan)
-
-	ackPublishChan := make(chan []byte)
-	go publish.StartPublisher(pubsub.AckDiscoveryPort, ackPublishChan)
-	<-time.After(30 * time.Millisecond)
+	bidPubChan := publish.StartPublisher(pubsub.BidDiscoveryPort)
+	ackPubChan := publish.StartPublisher(pubsub.AckDiscoveryPort)
 	forSaleSubChan, _ := subscribe.StartSubscriber(pubsub.SalesDiscoveryPort)
-
 	soldToSubChan, _ := subscribe.StartSubscriber(pubsub.SoldToDiscoveryPort)
-
 	ackSubChan, _ := subscribe.StartSubscriber(pubsub.AckDiscoveryPort)
 
 	firstCall := types.Call{Type: types.Hall, Floor: 3, Dir: types.Down, ElevatorID: ""}
@@ -50,7 +44,7 @@ func TestSeller(t *testing.T) {
 			if err != nil {
 				panic(fmt.Sprintf("Could not marshal call %s", err.Error()))
 			}
-			bidPublishChan <- js
+			bidPubChan <- js
 
 			secondBid := types.Bid{Call: item, Price: bestPrice, ElevatorID: id2}
 			js, err = json.Marshal(secondBid)
@@ -58,7 +52,7 @@ func TestSeller(t *testing.T) {
 			if err != nil {
 				panic(fmt.Sprintf("Could not marshal call %s", err.Error()))
 			}
-			bidPublishChan <- js
+			bidPubChan <- js
 		case soldItemJson := <-soldToSubChan:
 			soldItem := types.SoldTo{}
 			err := json.Unmarshal(soldItemJson, &soldItem)
@@ -73,7 +67,7 @@ func TestSeller(t *testing.T) {
 			if err != nil {
 				panic(fmt.Sprintf("Could not marshal call %s", err.Error()))
 			}
-			ackPublishChan <- js
+			ackPubChan <- js
 		case ackJson := <-ackSubChan:
 			ack := types.Ack{}
 			err := json.Unmarshal(ackJson, &ack)

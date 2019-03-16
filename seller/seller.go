@@ -29,12 +29,10 @@ func StartSelling(newCalls chan types.Call) {
 	state := Idle
 
 	// Start sales publisher
-	forSalePubChan := make(chan []byte)
-	go publish.StartPublisher(pubsub.SalesDiscoveryPort, forSalePubChan)
+	forSalePubChan := publish.StartPublisher(pubsub.SalesDiscoveryPort)
 
 	// Start sold to publisher
-	soldToPubChan := make(chan []byte)
-	go publish.StartPublisher(pubsub.SoldToDiscoveryPort, soldToPubChan)
+	soldToPubChan := publish.StartPublisher(pubsub.SoldToDiscoveryPort)
 	<-time.After(30 * time.Millisecond)
 	// Start bid subscriber
 	bidSubChan, _ := subscribe.StartSubscriber(pubsub.BidDiscoveryPort)

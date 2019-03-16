@@ -12,32 +12,36 @@ import (
 const TTL = 5 * time.Second
 
 // StartPublisher starts a publisher. It will listen for subscribers on the given discoveryPort.
-// Items in the thingsToPublish channel will be published to all current subscribers.
-func StartPublisher(discoveryPort int, thingsToPublish chan []byte) {
+// Items in the returned buffered channel will be published to all current subscribers.
+func StartPublisher(discoveryPort int) chan []byte {
+	thingsToPublish := make(chan []byte, 1024)
 	discoveredIPs := make(chan string)
 	go listenForSubscribers(discoveryPort, discoveredIPs)
-	subHotChan := hotchan.HotChan{}
-	subHotChan.Start()
-	defer subHotChan.Stop()
-	for {
-		select {
-		case ip := <-discoveredIPs:
-			subs := make(chan hotchan.Item, 1024)
-			newSub := hotchan.Item{Val: ip, TTL: TTL}
-			subs <- newSub
-			for len(subHotChan.Out) > 0 {
-				sub := <-subHotChan.Out
-				if sub.Val != newSub.Val {
-					subs <- sub
+	go func() {
+		subHotChan := hotchan.HotChan{}
+		subHotChan.Start()
+		defer subHotChan.Stop()
+		for {
+			select {
+			case ip := <-discoveredIPs:
+				subs := make(chan hotchan.Item, 1024)
+				newSub := hotchan.Item{Val: ip, TTL: TTL}
+				subs <- newSub
+				for len(subHotChan.Out) > 0 {
+					sub := <-subHotChan.Out
+					if sub.Val != newSub.Val {
+						subs <- sub
+					}
 				}
+				for len(subs) > 0 {
+					subHotChan.Insert(<-subs)
+				}
+			case thingToPublish := <-thingsToPublish:
+				fanOutPublish(thingToPublish, subHotChan)
 			}
-			for len(subs) > 0 {
-				subHotChan.Insert(<-subs)
-			}
-		case thingToPublish := <-thingsToPublish:
-			fanOutPublish(thingToPublish, subHotChan)
 		}
-	}
+	}()
+	return thingsToPublish
 }
 
 func listenForSubscribers(discoveryPort int, discoveredIPs chan string) {
