@@ -26,16 +26,16 @@ const AckWaitDuration = time.Millisecond * 10
 // StartSelling starts the seller.
 // It will attempt to sell calls sent into the newCalls channel on the network.
 func StartSelling(newCalls chan types.Call) {
-	State := Idle
+	state := Idle
 
 	// Start sales publisher
 	forSalePubChan := make(chan []byte)
-	publish.StartPublisher(pubsub.SalesDiscoveryPort, forSalePubChan)
+	go publish.StartPublisher(pubsub.SalesDiscoveryPort, forSalePubChan)
 
 	// Start sold to publisher
 	soldToPubChan := make(chan []byte)
-	publish.StartPublisher(pubsub.SoldToDiscoveryPort, soldToPubChan)
-
+	go publish.StartPublisher(pubsub.SoldToDiscoveryPort, soldToPubChan)
+	<-time.After(30 * time.Millisecond)
 	// Start bid subscriber
 	bidSubChan, _ := subscribe.StartSubscriber(pubsub.BidDiscoveryPort)
 
@@ -51,13 +51,13 @@ func StartSelling(newCalls chan types.Call) {
 		for {
 			val := <-newCalls
 			hcItem := hotchan.Item{Val: val, TTL: TTL * time.Millisecond}
-			forSale.In <- hcItem
+			forSale.Insert(hcItem)
 		}
 	}()
 	var itemForSale hotchan.Item
 	var lowestBid types.Bid
 	for {
-		switch State {
+		switch state {
 		case Idle:
 			for {
 				itemForSale = <-forSale.Out
@@ -67,7 +67,7 @@ func StartSelling(newCalls chan types.Call) {
 					panic(fmt.Sprintf("Could not marshal call %s", err.Error()))
 				}
 				forSalePubChan <- js
-				State = WaitingForBids
+				state = WaitingForBids
 				break
 			}
 		case WaitingForBids:
@@ -78,17 +78,20 @@ func StartSelling(newCalls chan types.Call) {
 				select {
 				case bidJson := <-bidSubChan:
 					bid := types.Bid{}
-					err := json.Unmarshal(bidJson, bid)
+					err := json.Unmarshal(bidJson, &bid)
 					if err != nil {
 						panic(fmt.Sprintf("Could not unmarshal bid %s", err.Error()))
 					}
+					fmt.Println("Got bid")
 					if bid.Call == itemForSale.Val {
 						recvBids = append(recvBids, bid)
 					}
 				case <-timeOut:
 					if len(recvBids) == 0 {
 						//Try to sell again
-						forSale.In <- itemForSale
+						forSale.Insert(itemForSale)
+						state = Idle
+						break L1
 					}
 					lowestBid = getLowestBid(recvBids)
 
@@ -97,7 +100,7 @@ func StartSelling(newCalls chan types.Call) {
 						panic(fmt.Sprintf("Could not marshal call %s", err.Error()))
 					}
 					soldToPubChan <- js
-					State = WaitingForAck
+					state = WaitingForAck
 					break L1
 				}
 			}
@@ -108,15 +111,17 @@ func StartSelling(newCalls chan types.Call) {
 				select {
 				case ackJson := <-ackSubChan:
 					ack := types.Ack{}
-					err := json.Unmarshal(ackJson, ack)
+					err := json.Unmarshal(ackJson, &ack)
 					if err != nil {
 						panic(fmt.Sprintf("Could not unmarshal ack %s", err.Error()))
 					}
 					if ack.Bid == lowestBid {
+						state = Idle
 						break L2
 					}
 				case <-timeOut:
-					forSale.In <- itemForSale
+					forSale.Insert(itemForSale)
+					state = Idle
 					break L2
 				}
 			}
@@ -125,7 +130,7 @@ func StartSelling(newCalls chan types.Call) {
 }
 
 func getLowestBid(bids []types.Bid) types.Bid {
-	var lowestBid types.Bid
+	lowestBid := bids[0]
 	lowestPrice := bids[0].Price
 	for _, bid := range bids {
 		if bid.Price < lowestPrice {

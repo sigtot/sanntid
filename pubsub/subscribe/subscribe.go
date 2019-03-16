@@ -35,10 +35,11 @@ func StartSubscriber(discoveryPort int) (receivedBufs chan []byte, httpPort int)
 	receivedBufs = make(chan []byte, 1024)
 	httpPort = findAvailPort()
 	go func() {
-		http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		mux := http.NewServeMux()
+		mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 			subHandler(w, r, receivedBufs)
 		})
-		if err := http.ListenAndServe(fmt.Sprintf(":%d", httpPort), nil); err != nil {
+		if err := http.ListenAndServe(fmt.Sprintf(":%d", httpPort), mux); err != nil {
 			panic(err)
 		}
 	}()

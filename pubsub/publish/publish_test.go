@@ -45,7 +45,7 @@ func TestPublish(t *testing.T) {
 	if err != nil {
 		t.Fatal("Could not marshal json")
 	}
-	go publish("http://localhost:51000", myDudeJson)
+	go publish("localhost:51000", myDudeJson)
 
 	select {
 	case <-quit:

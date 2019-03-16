@@ -22,28 +22,20 @@ func StartPublisher(discoveryPort int, thingsToPublish chan []byte) {
 	for {
 		select {
 		case ip := <-discoveredIPs:
-			subItems := make(chan hotchan.Item, 1024)
-			newSubItem := hotchan.Item{Val: ip, TTL: TTL}
-			subItems <- newSubItem
+			subs := make(chan hotchan.Item, 1024)
+			newSub := hotchan.Item{Val: ip, TTL: TTL}
+			subs <- newSub
 			for len(subHotChan.Out) > 0 {
-				subItem := <-subHotChan.Out
-				if subItem.Val != newSubItem.Val {
-					subItems <- subItem
+				sub := <-subHotChan.Out
+				if sub.Val != newSub.Val {
+					subs <- sub
 				}
 			}
-			for len(subItems) > 0 {
-				subHotChan.In <- <-subItems
+			for len(subs) > 0 {
+				subHotChan.Insert(<-subs)
 			}
 		case thingToPublish := <-thingsToPublish:
-			subItems := make(chan hotchan.Item, 1024)
-			for len(subHotChan.Out) > 0 {
-				subItems <- <-subHotChan.Out
-			}
-			for len(subItems) > 0 {
-				subItem := <-subItems
-				go publish(subItem.Val.(string), thingToPublish)
-				subHotChan.In <- subItem
-			}
+			fanOutPublish(thingToPublish, subHotChan)
 		}
 	}
 }
@@ -74,10 +66,24 @@ func checkError(err error) {
 }
 
 func publish(addr string, body []byte) {
-	resp, err := http.Post(addr, "application/json", bytes.NewBuffer(body))
+	resp, err := http.Post(fmt.Sprintf("http://%s", addr), "application/json", bytes.NewBuffer(body))
 	if err != nil {
-		fmt.Printf("Got response %x %x \n", resp.StatusCode, resp.Status)
+		fmt.Printf("Got response %d %s \n", resp.StatusCode, resp.Status)
 	}
 	err = resp.Body.Close()
 	checkError(err)
+}
+
+// Publish thingToPublish to all subscribers in subHotChan.
+// Must not be run concurrently.
+func fanOutPublish(thingToPublish []byte, subHotChan hotchan.HotChan) {
+	subs := make(chan hotchan.Item, 1024)
+	for len(subHotChan.Out) > 0 {
+		subs <- <-subHotChan.Out
+	}
+	for len(subs) > 0 {
+		sub := <-subs
+		go publish(sub.Val.(string), thingToPublish)
+		subHotChan.Insert(sub)
+	}
 }

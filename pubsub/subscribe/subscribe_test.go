@@ -15,7 +15,6 @@ type Dude struct {
 
 func TestSubscriber(t *testing.T) {
 	// Listen for published data
-	httpPort := findAvailPort()
 	receivedBufs, httpPort := StartSubscriber(41000)
 
 	// Publish

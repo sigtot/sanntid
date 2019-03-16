@@ -6,17 +6,19 @@ import (
 )
 
 /*
-HotChan is a channel with an In channel and an Out channel.
-Items put into the hc.In channel will expire after their time to live (TTL) runs out, but will be available in FIFO
-call from the hc.Out channel until then. The TTL countdown will run even if the items are not currently inside the
+HotChan is a channel with automatically expiring items.
+Items inserted with Insert will expire after their time to live (TTL) runs out, but will be available in FIFO order
+from the hc.Out channel until then. The TTL countdown will run even if the items are not currently inside the
 channel.
 */
 type HotChan struct {
-	In      chan Item
-	Out     chan Item
-	toPurge chan int
-	quit    chan int
-	status  statusMap
+	Out           chan Item
+	toPurge       chan int
+	quit          chan int
+	inserting     chan int
+	doneInserting chan int
+	status        statusMap
+	numInserts    int
 }
 
 // Item to be held in the hot channel. Needs a Val and a TTL.
@@ -33,11 +35,13 @@ type statusMap struct {
 
 // Start the HotQueue. Initializes channels and starts goroutines managing this hot channel
 func (c *HotChan) Start() {
-	c.In = make(chan Item, 1024)
 	c.Out = make(chan Item, 1024)
 	c.toPurge = make(chan int, 1024)
 	c.quit = make(chan int)
 	c.status = statusMap{status: make(map[int]chan int)}
+	c.inserting = make(chan int)
+	c.doneInserting = make(chan int)
+
 	go c.manage()
 }
 
@@ -46,24 +50,29 @@ func (c *HotChan) Stop() {
 	c.quit <- 0
 }
 
+func (c *HotChan) Insert(item Item) {
+	c.inserting <- 1
+	c.status.mu.Lock()
+	if item.id == 0 {
+		c.numInserts++
+		item.id = c.numInserts
+		c.status.status[item.id] = make(chan int, 1)
+		c.status.status[item.id] <- 1
+		go c.doom(item)
+	}
+	if len(c.status.status[item.id]) > 0 {
+		c.Out <- item
+	}
+	c.status.mu.Unlock()
+	c.doneInserting <- 1
+}
+
 // Manages incoming items
 func (c *HotChan) manage() {
-	var count int
 	for {
 		select {
-		case item := <-c.In:
-			c.status.mu.Lock()
-			if item.id == 0 {
-				count++
-				item.id = count
-				c.status.status[item.id] = make(chan int, 1)
-				c.status.status[item.id] <- 1
-				go c.doom(item)
-			} else if len(c.status.status[item.id]) == 0 {
-				break
-			}
-			c.status.mu.Unlock()
-			c.Out <- item
+		case <-c.inserting:
+			<-c.doneInserting
 		case killID := <-c.toPurge:
 			spared := make(chan Item, 1024)
 		L:

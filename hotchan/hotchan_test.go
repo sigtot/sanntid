@@ -16,9 +16,9 @@ func TestHotChan(t *testing.T) {
 	c.Start()
 	defer c.Stop()
 
-	c.In <- Item{Val: 1, TTL: 40 * time.Millisecond}
-	c.In <- Item{Val: 2, TTL: 20 * time.Millisecond}
-	c.In <- Item{Val: 3, TTL: 50 * time.Millisecond}
+	c.Insert(Item{Val: 1, TTL: 40 * time.Millisecond})
+	c.Insert(Item{Val: 2, TTL: 20 * time.Millisecond})
+	c.Insert(Item{Val: 3, TTL: 50 * time.Millisecond})
 
 	time.Sleep(30 * time.Millisecond)
 	one := <-c.Out
@@ -34,7 +34,7 @@ func TestOutsideDecay(t *testing.T) {
 	c.Start()
 	defer c.Stop()
 
-	c.In <- Item{Val: 42, TTL: 20 * time.Millisecond}
+	c.Insert(Item{Val: 42, TTL: 20 * time.Millisecond})
 
 	time.Sleep(5 * time.Millisecond)
 	item := <-c.Out
@@ -43,7 +43,7 @@ func TestOutsideDecay(t *testing.T) {
 	time.Sleep(20 * time.Millisecond)
 
 	// Put it back in
-	c.In <- item
+	c.Insert(item)
 
 	// Ensure that we're not able to retrieve it
 L:
@@ -59,5 +59,16 @@ L:
 	// Ensure that out channel is empty
 	if l := len(c.Out); l != 0 {
 		t.Errorf("Error: Out channel should be empty, but it is length %d\n", l)
+	}
+}
+
+func TestInOutInstantYo(t *testing.T) {
+	c := HotChan{}
+	c.Start()
+	defer c.Stop()
+
+	c.Insert(Item{Val: 42, TTL: 20 * time.Millisecond})
+	if len(c.Out) == 0 {
+		t.FailNow()
 	}
 }
