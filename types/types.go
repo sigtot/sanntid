@@ -21,6 +21,10 @@ type Call struct {
 	ElevatorID string
 }
 
+type Order struct {
+	Call
+}
+
 type Bid struct {
 	Call       Call
 	Price      int
