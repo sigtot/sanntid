@@ -16,6 +16,7 @@ const id2 string = "secondID"
 
 func TestSeller(t *testing.T) {
 	bestPrice := 4
+	betterThanBestPrice := 2
 	newCalls := make(chan types.Call)
 	go StartSelling(newCalls)
 
@@ -48,6 +49,21 @@ func TestSeller(t *testing.T) {
 
 			secondBid := types.Bid{Call: item, Price: bestPrice, ElevatorID: id2}
 			js, err = json.Marshal(secondBid)
+			fmt.Printf("Bid: %s\n", string(js[:]))
+			if err != nil {
+				panic(fmt.Sprintf("Could not marshal call %s", err.Error()))
+			}
+			bidPubChan <- js
+
+			otherBid := types.Bid{
+				Call: types.Call{
+					Type:       types.Hall,
+					Floor:      4,
+					Dir:        types.Down,
+					ElevatorID: ""},
+				Price:      betterThanBestPrice,
+				ElevatorID: id2}
+			js, err = json.Marshal(otherBid)
 			fmt.Printf("Bid: %s\n", string(js[:]))
 			if err != nil {
 				panic(fmt.Sprintf("Could not marshal call %s", err.Error()))
