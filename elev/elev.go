@@ -1,7 +1,7 @@
 package elev
 
 import (
-	"github.com/TTK4145/driver-go/elevio"
+	"github.com/sigtot/elevio"
 	"time"
 )
 

@@ -36,9 +36,9 @@ func StartHandlingIndicators() {
 	}()
 }
 
-func getBtnType(callType types.CallType, direction types.Direction) elevio.ButtonType {
+func getBtnType(callType types.CallType, dir types.Direction) elevio.ButtonType {
 	if callType == types.Hall {
-		if direction == types.Up {
+		if dir == types.Up {
 			return elevio.BtnHallUp
 		} else {
 			return elevio.BtnHallDown
