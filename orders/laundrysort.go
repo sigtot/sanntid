@@ -1,9 +1,9 @@
 package orders
 
 import (
-	"errors"
 	"github.com/sigtot/elevio"
 	"github.com/sigtot/sanntid/types"
+	"github.com/sigtot/sanntid/utils"
 )
 
 func sortOrders(orders []types.Order, position float64, dir elevio.MotorDirection) (sorted []types.Order, err error) {
@@ -32,7 +32,7 @@ func sortOrders(orders []types.Order, position float64, dir elevio.MotorDirectio
 					sorted = append(sorted, order)
 					orders = append(orders[:i], orders[i+1:]...)
 					i--
-				} else if mdDir, e := orderDir2MDDir(order.Dir); e == nil {
+				} else if mdDir, e := utils.OrderDir2MDDir(order.Dir); e == nil {
 					if mdDir == dir {
 						sorted = append(sorted, order)
 						orders = append(orders[:i], orders[i+1:]...)
@@ -89,14 +89,4 @@ func findStartDir(orders []types.Order, floor int) elevio.MotorDirection {
 		}
 	}
 	return elevio.MdUp
-}
-
-func orderDir2MDDir(orderDir types.Direction) (mdDir elevio.MotorDirection, err error) {
-	if orderDir == types.Up {
-		return elevio.MdUp, nil
-	}
-	if orderDir == types.Down {
-		return elevio.MdDown, nil
-	}
-	return elevio.MdStop, errors.New("conversion from invalid order direction to motor direction")
 }
