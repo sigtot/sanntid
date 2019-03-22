@@ -2,7 +2,6 @@ package orders
 
 import (
 	"errors"
-	"fmt"
 	"github.com/sigtot/elevio"
 	"github.com/sigtot/sanntid/types"
 )
@@ -17,7 +16,15 @@ func sortOrders(orders []types.Order, position float64, dir elevio.MotorDirectio
 	floor := roundPositionInDirection(position, dir)
 	startFloor := floor
 	startDir := dir
+	homeHitCount := 0
 	for {
+		if floor == startFloor && dir == startDir {
+			homeHitCount++
+		}
+		if homeHitCount >= 2 {
+			break
+		}
+
 		for i := 0; i < len(orders); i++ {
 			order := orders[i]
 			if order.Floor == floor {
@@ -36,13 +43,13 @@ func sortOrders(orders []types.Order, position float64, dir elevio.MotorDirectio
 				}
 			}
 		}
-		fmt.Println()
-		floor += int(dir)
-		if floor == topFloor || floor == bottomFloor {
-			dir = revDir(dir)
-		}
-		if floor == startFloor && dir == startDir {
-			break
+
+		if floor >= topFloor && dir == elevio.MdUp {
+			dir = elevio.MdDown
+		} else if floor <= bottomFloor && dir == elevio.MdDown {
+			dir = elevio.MdUp
+		} else {
+			floor += int(dir)
 		}
 	}
 
@@ -92,8 +99,4 @@ func orderDir2MDDir(orderDir types.Direction) (mdDir elevio.MotorDirection, err 
 		return elevio.MdDown, nil
 	}
 	return elevio.MdStop, errors.New("conversion from invalid order direction to motor direction")
-}
-
-func revDir(dir elevio.MotorDirection) elevio.MotorDirection {
-	return elevio.MotorDirection(-1 * int(dir))
 }

@@ -6,19 +6,24 @@ import (
 	"math"
 )
 
-const communityWeight = 1
-const individualWeight = 0.5
+const communityWeight = 2
+const individualWeight = 1
 const waitWeight = 3
 const travelWeight = 1
 
 func calcPriceFromQueue(newOrder types.Order, orders []types.Order, position float64, dir elevio.MotorDirection) (int, error) {
-	sortedOrders, err := sortOrders(orders, position, dir)
+	ordersCopy := make([]types.Order, len(orders))
+	copy(ordersCopy, orders)
+
+	sortedOrders, err := sortOrders(ordersCopy, position, dir)
 	if err != nil {
 		return -1, err
 	}
 	sortedOrders = removeDupesSorted(sortedOrders)
 
-	newSortedOrders, err := sortOrders(append(sortedOrders, newOrder), position, dir)
+	newSortedOrders := make([]types.Order, len(sortedOrders))
+	copy(newSortedOrders, sortedOrders)
+	newSortedOrders, err = sortOrders(append(newSortedOrders, newOrder), position, dir)
 	if err != nil {
 		return -1, err
 	}
@@ -33,17 +38,23 @@ func calcPriceFromQueue(newOrder types.Order, orders []types.Order, position flo
 
 // Should take in sorted and unique orders for correct behaviour
 func calcTotalQueueCost(orders []types.Order, position float64) int {
-	cost := math.Abs(position - float64(orders[0].Floor))
-	for i := 1; i < len(orders); i++ {
-		cost += math.Abs(float64(orders[i].Floor)-float64(orders[i-1].Floor)) * travelWeight
-		if orders[i].Floor != orders[i-1].Floor {
+	cost := 0.0
+	for i := 0; i < len(orders); i++ {
+		cost += math.Abs(float64(orders[i].Floor)-position) * travelWeight
+		if (i == 0 || float64(orders[i].Floor) != position) && i < len(orders)-1 {
+			// Only add extra wait cost for different-floor, non-last orders
 			cost += waitWeight
 		}
+		position = float64(orders[i].Floor)
 	}
 	return int(cost + 0.5)
 }
 
 func removeDupesSorted(orders []types.Order) (uniques []types.Order) {
+	if len(orders) < 1 {
+		return orders
+	}
+
 	uniques = append(uniques, orders[0])
 	for i := 1; i < len(orders); i++ {
 		if !ordersEqual(orders[i], orders[i-1]) {
