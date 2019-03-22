@@ -57,21 +57,22 @@ func removeDupesSorted(orders []types.Order) (uniques []types.Order) {
 
 	uniques = append(uniques, orders[0])
 	for i := 1; i < len(orders); i++ {
-		if !ordersEqual(orders[i], orders[i-1]) {
+		if !OrdersEqual(orders[i], orders[i-1]) {
 			uniques = append(uniques, orders[i])
 		}
 	}
 	return uniques
 }
 
-func ordersEqual(order1 types.Order, order2 types.Order) bool {
+// Equivalent to checking equality of dir, type and floor
+func OrdersEqual(order1 types.Order, order2 types.Order) bool {
 	return order1.Dir == order2.Dir && order1.Type == order2.Type && order1.Floor == order2.Floor
 }
 
 // Returns index of needle in haystack if it exists, otherwise returns -1.
 func findOrderIndex(needle types.Order, haystack []types.Order) int {
 	for i, v := range haystack {
-		if ordersEqual(needle, v) {
+		if OrdersEqual(needle, v) {
 			return i
 		}
 	}
