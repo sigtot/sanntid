@@ -34,6 +34,10 @@ func StartBuying(priceCalc PriceCalculator) (boughtOrders chan types.Order) {
 					panic(fmt.Sprintf("Could not unmarshal call %s", err.Error()))
 				}
 
+				if call.Type == types.Cab && call.ElevatorID != elevatorID {
+					break // Do not respond to other elevator's cab calls
+				}
+
 				price := priceCalc.GetPrice(call)
 				bid := types.Bid{Call: call, Price: price, ElevatorID: elevatorID}
 
