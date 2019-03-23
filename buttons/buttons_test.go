@@ -14,7 +14,9 @@ const numElevFloors = 4
 func TestStartButtonHandler(t *testing.T) {
 	elevio.Init(elevServerAddr, numElevFloors)
 	callsForSale := make(chan types.Call)
-	go StartButtonHandler(callsForSale)
+	buttonEvents := make(chan elevio.ButtonEvent)
+	go elevio.PollButtons(buttonEvents)
+	StartButtonHandler(buttonEvents, callsForSale)
 	for {
 		call := <-callsForSale
 		fmt.Printf("%+v\n", call)

@@ -6,7 +6,6 @@ import (
 	"github.com/sigtot/sanntid/pubsub"
 	"github.com/sigtot/sanntid/pubsub/subscribe"
 	"github.com/sigtot/sanntid/types"
-	"log"
 	"testing"
 	"time"
 )
@@ -25,7 +24,6 @@ func (mockElev MockElevatorController) GetPos() float64 {
 }
 
 func TestOrderHandler(t *testing.T) {
-	newOrders := make(chan types.Order)
 	arrivals := make(chan types.Order)
 	currentGoals := make(chan types.Order)
 
@@ -33,7 +31,7 @@ func TestOrderHandler(t *testing.T) {
 
 	orderDeliveredSubChan, _ := subscribe.StartSubscriber(pubsub.OrderDeliveredDiscoveryPort)
 
-	_ = StartOrderHandler(newOrders, currentGoals, arrivals, mockElev)
+	_, newOrders := StartOrderHandler(currentGoals, arrivals, mockElev)
 
 	time.Sleep(500 * time.Millisecond)
 

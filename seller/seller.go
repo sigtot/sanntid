@@ -3,11 +3,13 @@ package seller
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/Sirupsen/logrus"
 	"github.com/sigtot/sanntid/hotchan"
 	"github.com/sigtot/sanntid/pubsub"
 	"github.com/sigtot/sanntid/pubsub/publish"
 	"github.com/sigtot/sanntid/pubsub/subscribe"
 	"github.com/sigtot/sanntid/types"
+	"github.com/sigtot/sanntid/utils"
 	"time"
 )
 
@@ -32,6 +34,8 @@ func StartSelling(newCalls chan types.Call) {
 	soldToPubChan := publish.StartPublisher(pubsub.SoldToDiscoveryPort)
 	bidSubChan, _ := subscribe.StartSubscriber(pubsub.BidDiscoveryPort)
 	ackSubChan, _ := subscribe.StartSubscriber(pubsub.AckDiscoveryPort)
+
+	var log = logrus.New()
 
 	forSale := hotchan.HotChan{}
 	forSale.Start()
@@ -58,6 +62,8 @@ func StartSelling(newCalls chan types.Call) {
 					panic(fmt.Sprintf("Could not marshal call %s", err.Error()))
 				}
 				forSalePubChan <- js
+
+				utils.LogCall(log, "SELLER", "New call for sale", itemForSale.Val.(types.Call))
 				state = WaitingForBids
 				break
 			}
@@ -73,10 +79,11 @@ func StartSelling(newCalls chan types.Call) {
 					if err != nil {
 						panic(fmt.Sprintf("Could not unmarshal bid %s", err.Error()))
 					}
-					fmt.Println("Got bid")
 					if bid.Call == itemForSale.Val {
 						recvBids = append(recvBids, bid)
 					}
+
+					utils.LogBid(log, "SELLER", "Bids to seller", bid)
 				case <-timeOut:
 					if len(recvBids) == 0 {
 						//Try to sell again
@@ -110,6 +117,7 @@ func StartSelling(newCalls chan types.Call) {
 						state = Idle
 						break L2
 					}
+					utils.LogAck(log, "SELLER", "Seller Ack", ack)
 				case <-timeOut:
 					forSale.Insert(itemForSale)
 					state = Idle

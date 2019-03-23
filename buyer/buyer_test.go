@@ -26,7 +26,8 @@ func TestBuyer(t *testing.T) {
 	}
 
 	priceCalc := MockPriceCalculator{}
-	boughtOrders := StartBuying(&priceCalc)
+	newOrders := make(chan types.Order)
+	StartBuying(&priceCalc, newOrders)
 
 	// Sell call
 	call := types.Call{Type: types.Hall, Floor: 3, Dir: types.Down, ElevatorID: ""}
@@ -52,9 +53,9 @@ func TestBuyer(t *testing.T) {
 
 	time.Sleep(20 * time.Millisecond)
 	select {
-	case boughtOrder := <-boughtOrders:
+	case newOrder := <-newOrders:
 		order := types.Order{Call: call}
-		if boughtOrder != order {
+		if newOrder != order {
 			t.Fatalf("Bad order received: %+v\n", order)
 		}
 	case <-time.After(20 * time.Millisecond):

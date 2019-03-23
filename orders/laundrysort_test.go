@@ -3,7 +3,6 @@ package orders
 import (
 	"github.com/sigtot/elevio"
 	"github.com/sigtot/sanntid/types"
-	"log"
 	"math/rand"
 	"reflect"
 	"testing"
@@ -101,7 +100,7 @@ func TestSortOrdersNice(t *testing.T) {
 
 		orders = scramble(orders)
 
-		sortedOrders, err := sortOrders(orders, 1, elevio.MdUp)
+		sortedOrders, err := sortOrders(orders, 1.5, elevio.MdUp)
 		if err != nil {
 			t.Fatalf(err.Error())
 		}

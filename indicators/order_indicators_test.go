@@ -15,7 +15,7 @@ import (
 // This test cannot fail. Just watch the lights :)
 func TestStartHandlingIndicators(t *testing.T) {
 	elevio.Init("localhost:15657", 4)
-	StartHandlingIndicators()
+	StartIndicatorHandler()
 	ackPubChan := publish.StartPublisher(pubsub.AckDiscoveryPort)
 	orderDeliveredPubChan := publish.StartPublisher(pubsub.OrderDeliveredDiscoveryPort)
 	call := types.Call{Type: types.Cab, Floor: 2, Dir: types.InvalidDir, ElevatorID: ""}

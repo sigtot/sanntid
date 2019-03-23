@@ -2,8 +2,10 @@ package elev
 
 import (
 	"errors"
+	"github.com/Sirupsen/logrus"
 	"github.com/sigtot/elevio"
 	"github.com/sigtot/sanntid/types"
+	"github.com/sigtot/sanntid/utils"
 	"sync"
 	"time"
 )
@@ -18,12 +20,6 @@ const elevServerAddr = "localhost:15657"
 
 const numElevFloors = 4
 
-const (
-	stateIdle = iota
-	stateMoving
-	stateWaiting
-)
-
 type Elev struct {
 	dir      elevio.MotorDirection
 	pos      float64
@@ -32,17 +28,16 @@ type Elev struct {
 	doorMu   sync.Mutex
 }
 
-func StartElevController(goalArrivals chan<- types.Order, currentGoals <-chan types.Order) *Elev {
-	floorArrivals := make(chan int)
-	go elevio.PollFloorSensor(floorArrivals)
-
+func StartElevController(goalArrivals chan<- types.Order, currentGoals <-chan types.Order, floorArrivals <-chan int) *Elev {
 	elev := Elev{}
 	err := elev.Init(elevServerAddr, numElevFloors)
 	if err != nil {
 		panic(err)
 	}
 
-	atGoal := make(chan int)
+	var log = logrus.New()
+
+	atGoal := make(chan int, 1024)
 
 	var startAgain <-chan time.Time
 	go func() {
@@ -51,7 +46,7 @@ func StartElevController(goalArrivals chan<- types.Order, currentGoals <-chan ty
 			case elev.goal = <-currentGoals:
 				// TODO: Think hard about this
 				elev.doorMu.Lock()
-				if int(elev.pos) == elev.goal.Floor {
+				if elev.atGoal() {
 					atGoal <- 1
 				} else if !elev.doorOpen {
 					elev.setDir(elev.getGoalDir())
@@ -65,6 +60,7 @@ func StartElevController(goalArrivals chan<- types.Order, currentGoals <-chan ty
 				startAgain = time.After(doorOpenWaitTime * time.Millisecond)
 				elevio.SetDoorOpenLamp(true)
 				goalArrivals <- elev.goal
+				utils.Log(log, "ELEV", "Open doors")
 			case floorArrival := <-floorArrivals:
 				if floorArrival < 0 {
 					// Between floors
@@ -76,7 +72,7 @@ func StartElevController(goalArrivals chan<- types.Order, currentGoals <-chan ty
 					// At floor
 					elev.setPos(float64(floorArrival))
 					if int(elev.pos) == elev.goal.Floor {
-						go func() { atGoal <- 1 }()
+						atGoal <- 1
 					}
 				}
 			case <-startAgain:
@@ -85,6 +81,7 @@ func StartElevController(goalArrivals chan<- types.Order, currentGoals <-chan ty
 				elev.doorOpen = false
 				elev.doorMu.Unlock()
 				elev.setDir(elev.getGoalDir())
+				utils.Log(log, "ELEV", "Close doors")
 			}
 		}
 	}()
@@ -101,6 +98,7 @@ func (elev *Elev) getGoalDir() elevio.MotorDirection {
 }
 
 func (elev *Elev) Init(addr string, numFloors int) error {
+	var log = logrus.New()
 	elevio.Init(addr, numFloors)
 	floorArrivals := make(chan int)
 	go elevio.PollFloorSensor(floorArrivals)
@@ -118,6 +116,9 @@ L:
 			return errors.New("failed to reach floor within timeout")
 		}
 	}
+
+	utils.Log(log, "ELEV", "Elev init successful")
+
 	return nil
 }
 
@@ -132,6 +133,10 @@ func (elev *Elev) setPos(pos float64) {
 	if isWholeNumber {
 		elevio.SetFloorIndicator(int(pos))
 	}
+}
+
+func (elev *Elev) atGoal() bool {
+	return int(2*elev.pos) == 2*elev.goal.Floor
 }
 
 func (elev *Elev) GetDir() elevio.MotorDirection {

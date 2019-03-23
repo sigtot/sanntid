@@ -11,7 +11,6 @@ func sortOrders(orders []types.Order, position float64, dir elevio.MotorDirectio
 	if dir == elevio.MdStop {
 		dir = findStartDir(orders, int(position))
 	}
-
 	// Iterate over elevator cycle
 	floor := roundPositionInDirection(position, dir)
 	startFloor := floor

@@ -2,10 +2,12 @@ package orders
 
 import (
 	"encoding/json"
+	"github.com/Sirupsen/logrus"
 	"github.com/sigtot/elevio"
 	"github.com/sigtot/sanntid/pubsub"
 	"github.com/sigtot/sanntid/pubsub/publish"
 	"github.com/sigtot/sanntid/types"
+	"github.com/sigtot/sanntid/utils"
 )
 
 const numFloors = 4 // TODO: Move this maybe
@@ -22,13 +24,18 @@ type ElevInterface interface {
 	GetPos() float64
 }
 
+var log = logrus.New()
+
 func StartOrderHandler(
-	newOrders chan types.Order,
 	currentGoals chan types.Order,
 	arrivals chan types.Order,
-	elev ElevInterface) OrderHandler {
+	elev ElevInterface) (*OrderHandler, chan types.Order) {
 	orderDeliveredPubChan := publish.StartPublisher(pubsub.OrderDeliveredDiscoveryPort)
 	oh := OrderHandler{elev: elev}
+	newOrders := make(chan types.Order)
+
+	var log = logrus.New()
+
 	go func() {
 		for {
 			select {
@@ -37,16 +44,17 @@ func StartOrderHandler(
 				oh.orders = append(oh.orders, order)
 				nextGoal, err := getNextGoal(oh.orders, oh.elev)
 				okOrPanic(err)
+				utils.LogOrder(log, "ORDER HANDLER", "Next Goal Order", nextGoal)
 				currentGoals <- nextGoal
 			case arrival := <-arrivals:
 				// Delete corresponding order
 				for i, v := range oh.orders {
 					if OrdersEqual(v, arrival) {
 						oh.orders = append(oh.orders[:i], oh.orders[i+1:]...)
+						utils.LogOrder(log, "ORDER HANDLER", "Deleting Order", arrival)
 						break
 					}
 				}
-
 				// Publish order delivered
 				arrivalJson, err := json.Marshal(arrival)
 				okOrPanic(err)
@@ -55,13 +63,14 @@ func StartOrderHandler(
 				// Set next goal
 				if len(oh.orders) > 0 {
 					nextGoal, err := getNextGoal(oh.orders, oh.elev)
+					utils.LogOrder(log, "ORDER HANDLER", "Next Goal Order", nextGoal)
 					okOrPanic(err)
 					currentGoals <- nextGoal
 				}
 			}
 		}
 	}()
-	return oh
+	return &oh, newOrders
 }
 
 func (oh *OrderHandler) GetPrice(order types.Call) int {
@@ -72,7 +81,9 @@ func (oh *OrderHandler) GetPrice(order types.Call) int {
 }
 
 func getNextGoal(orders []types.Order, elev ElevInterface) (types.Order, error) {
-	sortedOrders, err := sortOrders(orders, elev.GetPos(), elev.GetDir())
+	ordersCopy := make([]types.Order, len(orders))
+	copy(ordersCopy, orders)
+	sortedOrders, err := sortOrders(ordersCopy, elev.GetPos(), elev.GetDir())
 	if err != nil {
 		return types.Order{}, err
 	}
