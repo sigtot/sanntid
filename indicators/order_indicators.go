@@ -9,9 +9,14 @@ import (
 	"github.com/sigtot/sanntid/types"
 )
 
-func StartHandlingIndicators() {
+const numFloors = 4 // TODO: Move this maybe
+const topFloor = numFloors - 1
+const bottomFloor = 0
+
+func StartIndicatorHandler() {
 	ackSubChan, _ := subscribe.StartSubscriber(pubsub.AckDiscoveryPort)
 	orderDeliveredSubChan, _ := subscribe.StartSubscriber(pubsub.OrderDeliveredDiscoveryPort)
+	initIndicators()
 	go func() {
 		for {
 			select {
@@ -24,7 +29,6 @@ func StartHandlingIndicators() {
 				elevio.SetButtonLamp(getBtnType(ack.Call.Type, ack.Call.Dir), ack.Call.Floor, true)
 
 			case orderJson := <-orderDeliveredSubChan:
-				println("Entered orderJson")
 				order := types.Order{}
 				err := json.Unmarshal(orderJson, &order)
 				if err != nil {
@@ -45,5 +49,17 @@ func getBtnType(callType types.CallType, dir types.Direction) elevio.ButtonType 
 		}
 	} else {
 		return elevio.BtnCab
+	}
+}
+
+func initIndicators() {
+	for i := bottomFloor; i <= topFloor; i++ {
+		elevio.SetButtonLamp(elevio.BtnCab, i, false)
+		if i != bottomFloor {
+			elevio.SetButtonLamp(elevio.BtnHallDown, i, false)
+		}
+		if i != topFloor {
+			elevio.SetButtonLamp(elevio.BtnHallUp, i, false)
+		}
 	}
 }
