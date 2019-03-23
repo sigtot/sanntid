@@ -49,7 +49,7 @@ func StartBuying(priceCalc PriceCalculator, newOrders chan types.Order) {
 				}
 				bidPubChan <- js
 
-				utils.LogBid(log, "BUYER", "New Bid", bid)
+				utils.LogBid(log, "BUYER", "Placed bid on order", bid)
 			case soldToJson := <-soldToSubChan:
 				soldTo := types.SoldTo{}
 				err := json.Unmarshal(soldToJson, &soldTo)

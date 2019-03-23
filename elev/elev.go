@@ -60,7 +60,7 @@ func StartElevController(goalArrivals chan<- types.Order, currentGoals <-chan ty
 				startAgain = time.After(doorOpenWaitTime * time.Millisecond)
 				elevio.SetDoorOpenLamp(true)
 				goalArrivals <- elev.goal
-				utils.Log(log, "ELEV", "Open doors")
+				utils.Log(log, "ELEV", "Opened doors")
 			case floorArrival := <-floorArrivals:
 				if floorArrival < 0 {
 					// Between floors
@@ -81,7 +81,7 @@ func StartElevController(goalArrivals chan<- types.Order, currentGoals <-chan ty
 				elev.doorOpen = false
 				elev.doorMu.Unlock()
 				elev.setDir(elev.getGoalDir())
-				utils.Log(log, "ELEV", "Close doors")
+				utils.Log(log, "ELEV", "Closed doors")
 			}
 		}
 	}()

@@ -63,7 +63,7 @@ func StartSelling(newCalls chan types.Call) {
 				}
 				forSalePubChan <- js
 
-				utils.LogCall(log, "SELLER", "New call for sale", itemForSale.Val.(types.Call))
+				utils.LogCall(log, "SELLER", "Started a new sale", itemForSale.Val.(types.Call))
 				state = WaitingForBids
 				break
 			}
@@ -83,7 +83,7 @@ func StartSelling(newCalls chan types.Call) {
 						recvBids = append(recvBids, bid)
 					}
 
-					utils.LogBid(log, "SELLER", "Bids to seller", bid)
+					utils.LogBid(log, "SELLER", "Received bid", bid)
 				case <-timeOut:
 					if len(recvBids) == 0 {
 						//Try to sell again
@@ -114,10 +114,10 @@ func StartSelling(newCalls chan types.Call) {
 						panic(fmt.Sprintf("Could not unmarshal ack %s", err.Error()))
 					}
 					if ack.Bid == lowestBid {
+						utils.LogAck(log, "SELLER", "Got ack from lowest bidder", ack)
 						state = Idle
 						break L2
 					}
-					utils.LogAck(log, "SELLER", "Seller Ack", ack)
 				case <-timeOut:
 					forSale.Insert(itemForSale)
 					state = Idle
