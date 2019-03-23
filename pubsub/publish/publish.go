@@ -3,7 +3,9 @@ package publish
 import (
 	"bytes"
 	"fmt"
+	"github.com/Sirupsen/logrus"
 	"github.com/sigtot/sanntid/hotchan"
+	"github.com/sigtot/sanntid/utils"
 	"net"
 	"net/http"
 	"time"
@@ -18,12 +20,14 @@ func StartPublisher(discoveryPort int) chan []byte {
 	discoveredIPs := make(chan string)
 	go listenForSubscribers(discoveryPort, discoveredIPs)
 	go func() {
+		log := logrus.New()
 		subHotChan := hotchan.HotChan{}
 		subHotChan.Start()
 		defer subHotChan.Stop()
 		for {
 			select {
 			case ip := <-discoveredIPs:
+				numSubsBefore := len(subHotChan.Out)
 				subs := make(chan hotchan.Item, 1024)
 				newSub := hotchan.Item{Val: ip, TTL: TTL}
 				subs <- newSub
@@ -35,6 +39,9 @@ func StartPublisher(discoveryPort int) chan []byte {
 				}
 				for len(subs) > 0 {
 					subHotChan.Insert(<-subs)
+				}
+				if len(subHotChan.Out) > numSubsBefore {
+					utils.LogNewSub(log, "PUBLISHER", "Discovered new subscriber", newSub.Val.(string))
 				}
 			case thingToPublish := <-thingsToPublish:
 				fanOutPublish(thingToPublish, subHotChan)

@@ -32,6 +32,12 @@ func LogOrder(log *logrus.Logger, moduleName string, info string, order types.Or
 	LogCall(log, moduleName, info, order.Call)
 }
 
+func LogNewSub(log *logrus.Logger, moduleName string, info string, subIP string) {
+	log.WithFields(logrus.Fields{
+		"IP": subIP,
+	}).Infof("%-15s %s", moduleName, info)
+}
+
 func Log(log *logrus.Logger, moduleName string, info string) {
 	log.Infof("%-15s %s", moduleName, info)
 }
