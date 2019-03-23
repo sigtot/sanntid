@@ -1,7 +1,6 @@
 package elev
 
 import (
-	"fmt"
 	"github.com/sigtot/elevio"
 	"github.com/sigtot/sanntid/orders"
 	"github.com/sigtot/sanntid/types"
@@ -14,16 +13,6 @@ func TestInit(t *testing.T) {
 	err := elev.Init(elevServerAddr, numElevFloors)
 	if err != nil {
 		t.Fatal(err)
-	}
-}
-
-func TestPollFloor(t *testing.T) {
-	elevio.Init(elevServerAddr, numElevFloors)
-	floorChan := make(chan int)
-	go elevio.PollFloorSensor(floorChan)
-	for {
-		floor := <-floorChan
-		fmt.Printf("Floor: %d\n", floor)
 	}
 }
 

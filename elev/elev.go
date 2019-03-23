@@ -6,7 +6,6 @@ import (
 	"github.com/sigtot/elevio"
 	"github.com/sigtot/sanntid/types"
 	"github.com/sigtot/sanntid/utils"
-	"sync"
 	"time"
 )
 
@@ -22,10 +21,10 @@ const numElevFloors = 4
 
 type Elev struct {
 	dir      elevio.MotorDirection
+	moving   bool
 	pos      float64
 	goal     types.Order
 	doorOpen bool
-	doorMu   sync.Mutex
 }
 
 func StartElevController(goalArrivals chan<- types.Order, currentGoals <-chan types.Order, floorArrivals <-chan int) *Elev {
@@ -44,19 +43,20 @@ func StartElevController(goalArrivals chan<- types.Order, currentGoals <-chan ty
 		for {
 			select {
 			case elev.goal = <-currentGoals:
+				if newGoalDir, updateDir, err := goalDir(elev.goal, elev.pos); updateDir == true && err == nil {
+					elev.dir = newGoalDir
+				} else if err != nil {
+					panic(err)
+				}
 				// TODO: Think hard about this
-				elev.doorMu.Lock()
 				if elev.atGoal() {
 					atGoal <- 1
 				} else if !elev.doorOpen {
-					elev.setDir(elev.getGoalDir())
+					elev.start()
 				}
-				elev.doorMu.Unlock()
 			case <-atGoal:
-				elev.doorMu.Lock()
-				elev.setDir(elevio.MdStop)
+				elev.stop()
 				elev.doorOpen = true
-				elev.doorMu.Unlock()
 				startAgain = time.After(doorOpenWaitTime * time.Millisecond)
 				elevio.SetDoorOpenLamp(true)
 				goalArrivals <- elev.goal
@@ -77,24 +77,15 @@ func StartElevController(goalArrivals chan<- types.Order, currentGoals <-chan ty
 				}
 			case <-startAgain:
 				elevio.SetDoorOpenLamp(false)
-				elev.doorMu.Lock()
 				elev.doorOpen = false
-				elev.doorMu.Unlock()
-				elev.setDir(elev.getGoalDir())
+				if !elev.atGoal() {
+					elev.start()
+				}
 				utils.Log(log, "ELEV", "Closed doors")
 			}
 		}
 	}()
 	return &elev
-}
-
-func (elev *Elev) getGoalDir() elevio.MotorDirection {
-	if float64(elev.goal.Floor) > elev.pos {
-		return elevio.MdUp
-	} else if float64(elev.goal.Floor) < elev.pos {
-		return elevio.MdDown
-	}
-	return elevio.MdStop
 }
 
 func (elev *Elev) Init(addr string, numFloors int) error {
@@ -103,8 +94,11 @@ func (elev *Elev) Init(addr string, numFloors int) error {
 	floorArrivals := make(chan int)
 	go elevio.PollFloorSensor(floorArrivals)
 
-	elev.setDir(elevio.MdDown)
-	defer elev.setDir(elevio.MdStop)
+	elev.moving = true
+	elevio.SetMotorDirection(elevio.MdDown)
+	elev.dir = elevio.MdDown
+
+	defer elev.stop()
 	timeout := time.After(initTimeoutTime * time.Millisecond)
 L:
 	for {
@@ -122,9 +116,30 @@ L:
 	return nil
 }
 
-func (elev *Elev) setDir(direction elevio.MotorDirection) {
-	elev.dir = direction
-	elevio.SetMotorDirection(direction)
+func goalDir(goal types.Order, pos float64) (dir elevio.MotorDirection, updateDir bool, err error) {
+	if float64(goal.Floor) > pos {
+		return elevio.MdUp, true, nil
+	} else if float64(goal.Floor) < pos {
+		return elevio.MdDown, true, nil
+	} else if goal.Type == types.Hall {
+		if dir, err := utils.OrderDir2MDDir(goal.Dir); err == nil {
+			return dir, true, nil
+		} else {
+			return dir, false, err
+		}
+	} else {
+		return elevio.MdDown, false, nil
+	}
+}
+
+func (elev *Elev) stop() {
+	elev.moving = false
+	elevio.SetMotorDirection(elevio.MdStop)
+}
+
+func (elev *Elev) start() {
+	elev.moving = true
+	elevio.SetMotorDirection(elev.dir)
 }
 
 func (elev *Elev) setPos(pos float64) {

@@ -9,7 +9,7 @@ import (
 func sortOrders(orders []types.Order, position float64, dir elevio.MotorDirection) (sorted []types.Order, err error) {
 	// Choose a starting direction if elevator standing still
 	if dir == elevio.MdStop {
-		dir = findStartDir(orders, int(position))
+		panic("sortOrders should never be called with a elevio.MdStop direction")
 	}
 	// Iterate over elevator cycle
 	floor := roundPositionInDirection(position, dir)
@@ -74,18 +74,4 @@ func roundPositionInDirection(position float64, dir elevio.MotorDirection) (floo
 		return int(position)
 	}
 	return int(position + 0.5)
-}
-
-func findStartDir(orders []types.Order, floor int) elevio.MotorDirection {
-	for d := 0; d < numFloors; d += 1 {
-		for _, order := range orders {
-			if order.Floor == floor+d {
-				return elevio.MdUp
-			}
-			if order.Floor == floor-d {
-				return elevio.MdDown
-			}
-		}
-	}
-	return elevio.MdUp
 }
