@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/sigtot/elevio"
+	"github.com/sigtot/sanntid/mac"
 	"github.com/sigtot/sanntid/pubsub"
 	"github.com/sigtot/sanntid/pubsub/subscribe"
 	"github.com/sigtot/sanntid/types"
@@ -17,6 +18,10 @@ func StartIndicatorHandler() {
 	ackSubChan, _ := subscribe.StartSubscriber(pubsub.AckDiscoveryPort)
 	orderDeliveredSubChan, _ := subscribe.StartSubscriber(pubsub.OrderDeliveredDiscoveryPort)
 	initIndicators()
+	macAddr, err := mac.GetMacAddr()
+	if err != nil {
+		panic(err)
+	}
 	go func() {
 		for {
 			select {
@@ -26,7 +31,9 @@ func StartIndicatorHandler() {
 				if err != nil {
 					panic(fmt.Sprintf("Could not unmarshal ack %s", err.Error()))
 				}
-				elevio.SetButtonLamp(getBtnType(ack.Call.Type, ack.Call.Dir), ack.Call.Floor, true)
+				if ack.Call.Type == types.Hall || ack.ElevatorID == macAddr {
+					elevio.SetButtonLamp(getBtnType(ack.Call.Type, ack.Call.Dir), ack.Call.Floor, true)
+				}
 
 			case orderJson := <-orderDeliveredSubChan:
 				order := types.Order{}
@@ -34,7 +41,9 @@ func StartIndicatorHandler() {
 				if err != nil {
 					panic(fmt.Sprintf("Could not unmarshal order %s", err.Error()))
 				}
-				elevio.SetButtonLamp(getBtnType(order.Type, order.Dir), order.Floor, false)
+				if order.Type == types.Hall || order.ElevatorID == macAddr {
+					elevio.SetButtonLamp(getBtnType(order.Type, order.Dir), order.Floor, false)
+				}
 			}
 		}
 	}()
