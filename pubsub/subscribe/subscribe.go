@@ -7,6 +7,7 @@ import (
 	"net"
 	"net/http"
 	"strconv"
+	"strings"
 	"time"
 )
 
@@ -15,7 +16,9 @@ func findAvailPort() (port int) {
 		port = rand.Intn(40000) + 10000
 		conn, err := net.Listen("tcp", net.JoinHostPort("", strconv.Itoa(port)))
 		if err != nil {
-			panic(err)
+			if !strings.Contains(err.Error(), "address already in use") {
+				panic(err)
+			}
 		}
 		if conn != nil {
 			err = conn.Close()
