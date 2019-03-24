@@ -54,31 +54,27 @@ func StartOrderWatcher(callsForSale chan types.Call, db *bolt.DB, quit <-chan in
 				// Save wt in db
 				bName, err := getBucketName(wt)
 				okOrPanic(err)
-				err = db.Update(func(tx *bolt.Tx) error {
-					_, err := tx.CreateBucketIfNotExists([]byte(bName))
-					return err
-				})
-				okOrPanic(err)
-				err = db.Update(func(tx *bolt.Tx) error {
-					b := tx.Bucket([]byte(bName))
-
-					err = b.Put([]byte(strconv.Itoa(wt.Call.Floor)), []byte(wtJson))
-					return err
-				})
+				err = writeToDb(db, bName, strconv.Itoa(wt.Call.Floor), wtJson)
 				okOrPanic(err)
 
 			case orderJson := <-orderDeliveredSubChan:
-				// TODO: Implement
 				order := types.Order{}
 				err := json.Unmarshal(orderJson, &order)
 				if err != nil {
 					panic(fmt.Sprintf("Could not unmarshal order %s", err.Error()))
 				}
-
+				wt := WatchThis{ElevatorID: order.ElevatorID, Time: time.Now(), Call: order.Call}
+				bName, err := getBucketName(wt)
+				fmt.Printf("Order del: %+v\n", order)
+				err = writeToDb(db, bName, strconv.Itoa(wt.Call.Floor), []byte{})
+				okOrPanic(err)
 			case <-dbTraversalTicker.C:
 				err := db.View(func(tx *bolt.Tx) error {
 					return tx.ForEach(func(name []byte, b *bolt.Bucket) error {
 						err := b.ForEach(func(k []byte, v []byte) error {
+							if string(v) == "" {
+								return nil
+							}
 							if wt, err := unmarshalWatchThis(v); err == nil {
 								if time.Now().After(wt.Time.Add(getTTD())) {
 									// Resell order
@@ -107,6 +103,19 @@ func StartOrderWatcher(callsForSale chan types.Call, db *bolt.DB, quit <-chan in
 			}
 		}
 	}()
+}
+
+func writeToDb(db *bolt.DB, bName string, key string, value []byte) error {
+	if err := db.Update(func(tx *bolt.Tx) error {
+		_, err := tx.CreateBucketIfNotExists([]byte(bName))
+		return err
+	}); err != nil {
+		return err
+	}
+	return db.Update(func(tx *bolt.Tx) error {
+		b := tx.Bucket([]byte(bName))
+		return b.Put([]byte(key), []byte(value))
+	})
 }
 
 func getBucketName(wt WatchThis) (name string, err error) {

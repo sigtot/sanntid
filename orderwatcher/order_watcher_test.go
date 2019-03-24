@@ -56,12 +56,15 @@ func TestStartOrderWatcher(t *testing.T) {
 		if err := db.Close(); err != nil {
 			panic(err)
 		}
-		if err := os.Remove(testDbName); err != nil {
-			panic(err)
-		}
+		/*
+			if err := os.Remove(testDbName); err != nil {
+				panic(err)
+			}
+		*/
 	}()
 
 	ackPubChan := publish.StartPublisher(pubsub.AckDiscoveryPort)
+	orderDelPubChan := publish.StartPublisher(pubsub.OrderDeliveredDiscoveryPort)
 
 	callsForSale := make(chan types.Call)
 	quit := make(chan int)
@@ -96,6 +99,37 @@ func TestStartOrderWatcher(t *testing.T) {
 
 			if !(retrievedWT.Call == orders[i].Call) {
 				t.Fatalf("Retrieved value %+v does not match %+v\n", retrievedWT, orders[i].Call)
+			}
+		}
+		return nil
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	ordersDelivered := []types.Order{
+		orders[0],
+		{Call: types.Call{Type: types.Hall, Dir: types.Down, Floor: 6}},
+		{Call: types.Call{Type: types.Cab, Dir: types.InvalidDir, Floor: 2, ElevatorID: "fd:34:e6:b1:33:7e"}},
+	}
+	for _, v := range ordersDelivered {
+		orderJson, err := json.Marshal(v)
+		if err != nil {
+			t.Fatal("Could not marshal order")
+		}
+		orderDelPubChan <- orderJson
+	}
+
+	time.Sleep(1000 * time.Millisecond)
+	err = db.View(func(tx *bolt.Tx) error {
+		buckets := []*bolt.Bucket{
+			tx.Bucket([]byte(hallUpBucketName)),
+			tx.Bucket([]byte(hallDownBucketName)),
+			tx.Bucket([]byte("fd:34:e6:b1:33:7e")),
+		}
+		for i, b := range buckets {
+			if string(b.Get([]byte(strconv.Itoa(orders[i].Floor)))) != "" {
+				t.Fatal("Did not get empty string in delivered order slot")
 			}
 		}
 		return nil
