@@ -56,11 +56,16 @@ func TestStartOrderWatcher(t *testing.T) {
 		if err := db.Close(); err != nil {
 			panic(err)
 		}
+		if err := os.Remove(testDbName); err != nil {
+			panic(err)
+		}
 	}()
+
 	ackPubChan := publish.StartPublisher(pubsub.AckDiscoveryPort)
 
 	callsForSale := make(chan types.Call)
-	StartOrderWatcher(callsForSale, db)
+	quit := make(chan int)
+	StartOrderWatcher(callsForSale, db, quit)
 	orders := []types.Order{
 		{Call: types.Call{Type: types.Hall, Dir: types.Up, Floor: 1}},
 		{Call: types.Call{Type: types.Hall, Dir: types.Down, Floor: 6}},
@@ -98,7 +103,5 @@ func TestStartOrderWatcher(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if err := os.Remove(testDbName); err != nil {
-		panic(err)
-	}
+	quit <- 1
 }

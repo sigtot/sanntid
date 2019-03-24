@@ -2,6 +2,7 @@ package orderwatcher
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"github.com/sigtot/sanntid/pubsub"
 	"github.com/sigtot/sanntid/pubsub/subscribe"
@@ -27,15 +28,14 @@ type WatchThis struct {
 	Call       types.Call
 }
 
-func StartOrderWatcher(callsForSale chan types.Call, db *bolt.DB) {
-	okOrPanic(initHallOrderBuckets(db))
-
+func StartOrderWatcher(callsForSale chan types.Call, db *bolt.DB, quit <-chan int) {
 	ackSubChan, _ := subscribe.StartSubscriber(pubsub.AckDiscoveryPort)
 	orderDeliveredSubChan, _ := subscribe.StartSubscriber(pubsub.OrderDeliveredDiscoveryPort)
 
 	log := logrus.New()
 	go func() {
 		dbTraversalTicker := time.NewTicker(dbTraversalInterval * time.Millisecond)
+		defer dbTraversalTicker.Stop()
 		for {
 			select {
 			case ackJson := <-ackSubChan:
@@ -52,23 +52,13 @@ func StartOrderWatcher(callsForSale chan types.Call, db *bolt.DB) {
 				}
 
 				// Save wt in db
-				var bName string
-				if wt.Call.Type == types.Hall {
-					if wt.Call.Dir == types.Up {
-						bName = hallUpBucketName
-					} else if wt.Call.Dir == types.Down {
-						bName = hallDownBucketName
-					} else {
-						panic("unexpected non-direction")
-					}
-				} else if wt.Call.Type == types.Cab {
-					bName = wt.ElevatorID
-					err = db.Update(func(tx *bolt.Tx) error {
-						_, err := tx.CreateBucketIfNotExists([]byte(bName))
-						return err
-					})
-					okOrPanic(err)
-				}
+				bName, err := getBucketName(wt)
+				okOrPanic(err)
+				err = db.Update(func(tx *bolt.Tx) error {
+					_, err := tx.CreateBucketIfNotExists([]byte(bName))
+					return err
+				})
+				okOrPanic(err)
 				err = db.Update(func(tx *bolt.Tx) error {
 					b := tx.Bucket([]byte(bName))
 
@@ -84,6 +74,7 @@ func StartOrderWatcher(callsForSale chan types.Call, db *bolt.DB) {
 				if err != nil {
 					panic(fmt.Sprintf("Could not unmarshal order %s", err.Error()))
 				}
+
 			case <-dbTraversalTicker.C:
 				err := db.View(func(tx *bolt.Tx) error {
 					return tx.ForEach(func(name []byte, b *bolt.Bucket) error {
@@ -111,11 +102,27 @@ func StartOrderWatcher(callsForSale chan types.Call, db *bolt.DB) {
 					})
 				})
 				okOrPanic(err)
+			case <-quit:
+				return
 			}
 		}
 	}()
 }
 
+func getBucketName(wt WatchThis) (name string, err error) {
+	if wt.Call.Type == types.Hall {
+		if wt.Call.Dir == types.Up {
+			name = hallUpBucketName
+		} else if wt.Call.Dir == types.Down {
+			name = hallDownBucketName
+		} else {
+			err = errors.New("unexpected non-direction")
+		}
+	} else if wt.Call.Type == types.Cab {
+		name = wt.ElevatorID
+	}
+	return name, err
+}
 func unmarshalWatchThis(wtJson []byte) (*WatchThis, error) {
 	wt := WatchThis{}
 	err := json.Unmarshal(wtJson, &wt)
