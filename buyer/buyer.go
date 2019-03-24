@@ -3,13 +3,13 @@ package buyer
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/Sirupsen/logrus"
 	"github.com/sigtot/sanntid/mac"
 	"github.com/sigtot/sanntid/pubsub"
 	"github.com/sigtot/sanntid/pubsub/publish"
 	"github.com/sigtot/sanntid/pubsub/subscribe"
 	"github.com/sigtot/sanntid/types"
 	"github.com/sigtot/sanntid/utils"
+	"github.com/sirupsen/logrus"
 )
 
 type PriceCalculator interface {

@@ -2,10 +2,10 @@ package orderwatcher
 
 import (
 	"encoding/json"
-	bolt "github.com/etcd-io/bbolt"
 	"github.com/sigtot/sanntid/pubsub"
 	"github.com/sigtot/sanntid/pubsub/publish"
 	"github.com/sigtot/sanntid/types"
+	bolt "go.etcd.io/bbolt"
 	"os"
 	"strconv"
 	"testing"

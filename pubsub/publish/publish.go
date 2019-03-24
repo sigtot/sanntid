@@ -3,9 +3,9 @@ package publish
 import (
 	"bytes"
 	"fmt"
-	"github.com/Sirupsen/logrus"
 	"github.com/sigtot/sanntid/hotchan"
 	"github.com/sigtot/sanntid/utils"
+	"github.com/sirupsen/logrus"
 	"net"
 	"net/http"
 	"time"

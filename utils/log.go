@@ -1,8 +1,8 @@
 package utils
 
 import (
-	"github.com/Sirupsen/logrus"
 	"github.com/sigtot/sanntid/types"
+	"github.com/sirupsen/logrus"
 )
 
 func LogBid(log *logrus.Logger, moduleName string, info string, bid types.Bid) {

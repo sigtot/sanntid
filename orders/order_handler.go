@@ -2,12 +2,12 @@ package orders
 
 import (
 	"encoding/json"
-	"github.com/Sirupsen/logrus"
 	"github.com/sigtot/elevio"
 	"github.com/sigtot/sanntid/pubsub"
 	"github.com/sigtot/sanntid/pubsub/publish"
 	"github.com/sigtot/sanntid/types"
 	"github.com/sigtot/sanntid/utils"
+	"github.com/sirupsen/logrus"
 	"time"
 )
 

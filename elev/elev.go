@@ -2,10 +2,10 @@ package elev
 
 import (
 	"errors"
-	"github.com/Sirupsen/logrus"
 	"github.com/sigtot/elevio"
 	"github.com/sigtot/sanntid/types"
 	"github.com/sigtot/sanntid/utils"
+	"github.com/sirupsen/logrus"
 	"time"
 )
 

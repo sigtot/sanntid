@@ -3,11 +3,11 @@ package orderwatcher
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/Sirupsen/logrus"
-	bolt "github.com/etcd-io/bbolt"
 	"github.com/sigtot/sanntid/pubsub"
 	"github.com/sigtot/sanntid/pubsub/subscribe"
 	"github.com/sigtot/sanntid/types"
+	"github.com/sirupsen/logrus"
+	bolt "go.etcd.io/bbolt"
 	"math/rand"
 	"strconv"
 	"time"
