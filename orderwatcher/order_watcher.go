@@ -19,7 +19,7 @@ const hallDownBucketName = "hall_down"
 const dbTraversalInterval = 500
 
 const baseTTD = 10000
-const randTTDPart = 2000
+const randTTDOffset = 2000
 
 type WatchThis struct {
 	ElevatorID string
@@ -39,6 +39,7 @@ func StartOrderWatcher(callsForSale chan types.Call, db *bolt.DB) {
 		for {
 			select {
 			case ackJson := <-ackSubChan:
+				// Unmarshal ack
 				ack := types.Ack{}
 				err := json.Unmarshal(ackJson, &ack)
 				if err != nil {
@@ -49,8 +50,10 @@ func StartOrderWatcher(callsForSale chan types.Call, db *bolt.DB) {
 				if err != nil {
 					panic("Could not marshal WatchThis")
 				}
+
+				// Save wt in db
+				var bName string
 				if wt.Call.Type == types.Hall {
-					var bName string
 					if wt.Call.Dir == types.Up {
 						bName = hallUpBucketName
 					} else if wt.Call.Dir == types.Down {
@@ -58,21 +61,22 @@ func StartOrderWatcher(callsForSale chan types.Call, db *bolt.DB) {
 					} else {
 						panic("unexpected non-direction")
 					}
+				} else if wt.Call.Type == types.Cab {
+					bName = wt.ElevatorID
 					err = db.Update(func(tx *bolt.Tx) error {
-						b := tx.Bucket([]byte(bName))
-
-						err = b.Put([]byte(strconv.Itoa(wt.Call.Floor)), []byte(wtJson))
-						return err
-					})
-				} else {
-					err = db.Update(func(tx *bolt.Tx) error {
-						if b, err := tx.CreateBucketIfNotExists([]byte(wt.ElevatorID)); err == nil {
-							err = b.Put([]byte(strconv.Itoa(wt.Call.Floor)), []byte(wtJson))
-						}
+						_, err := tx.CreateBucketIfNotExists([]byte(bName))
 						return err
 					})
 					okOrPanic(err)
 				}
+				err = db.Update(func(tx *bolt.Tx) error {
+					b := tx.Bucket([]byte(bName))
+
+					err = b.Put([]byte(strconv.Itoa(wt.Call.Floor)), []byte(wtJson))
+					return err
+				})
+				okOrPanic(err)
+
 			case orderJson := <-orderDeliveredSubChan:
 				// TODO: Implement
 				order := types.Order{}
@@ -94,6 +98,7 @@ func StartOrderWatcher(callsForSale chan types.Call, db *bolt.DB) {
 									if wtJson, err := json.Marshal(wt); err == nil {
 										return b.Put(k, wtJson)
 									}
+
 									logWatchThis(log, "ORDER WATCHER", "Sent order to seller for resale", *wt)
 									return err
 								}
@@ -137,7 +142,7 @@ func okOrPanic(err error) {
 
 // Returns time to delivery for order, randomly distributed around its base time
 func getTTD() time.Duration {
-	return time.Duration(baseTTD+(rand.Intn(randTTDPart)-randTTDPart/2)) * time.Millisecond
+	return time.Duration(baseTTD+(rand.Intn(randTTDOffset)-randTTDOffset/2)) * time.Millisecond
 }
 
 func logWatchThis(log *logrus.Logger, moduleName string, info string, wt WatchThis) {
