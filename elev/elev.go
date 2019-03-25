@@ -19,7 +19,7 @@ const initTimeoutTime = 3000
 
 const elevServerHost = "localhost"
 
-const numElevFloors = 9
+const numElevFloors = 4
 
 const moduleName = "ELEV"
 

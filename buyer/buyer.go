@@ -12,6 +12,9 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+const numFloors = 4
+const topFloor = numFloors - 1
+const bottomFloor = 0
 const moduleName = "BUYER"
 
 type PriceCalculator interface {
@@ -40,6 +43,13 @@ func StartBuying(priceCalc PriceCalculator, newOrders chan types.Order) {
 
 				if call.Type == types.Cab && call.ElevatorID != elevatorID {
 					break // Do not respond to other elevator's cab calls
+				}
+
+				if call.Floor > topFloor || call.Floor < bottomFloor {
+					break // Do not respond to calls outside elevator floor range
+				}
+				if call.Floor == topFloor && call.Dir == types.Up || call.Floor == bottomFloor && call.Dir == types.Down {
+					break
 				}
 
 				price := priceCalc.GetPrice(call)

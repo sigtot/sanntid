@@ -39,6 +39,9 @@ func StartIndicatorHandler(quit <-chan int, wg *sync.WaitGroup) {
 				if err != nil {
 					panic(fmt.Sprintf("Could not unmarshal ack %s", err.Error()))
 				}
+				if ack.Call.Floor > topFloor || ack.Call.Floor < bottomFloor {
+					break
+				}
 				if ack.Call.Type == types.Hall || ack.ElevatorID == macAddr {
 					elevio.SetButtonLamp(getBtnType(ack.Call.Type, ack.Call.Dir), ack.Call.Floor, true)
 				}
@@ -49,6 +52,9 @@ func StartIndicatorHandler(quit <-chan int, wg *sync.WaitGroup) {
 				err := json.Unmarshal(orderJson, &order)
 				if err != nil {
 					panic(fmt.Sprintf("Could not unmarshal order %s", err.Error()))
+				}
+				if order.Floor > topFloor || order.Floor < bottomFloor {
+					break
 				}
 				if order.Type == types.Hall || order.ElevatorID == macAddr {
 					elevio.SetButtonLamp(getBtnType(order.Type, order.Dir), order.Floor, false)

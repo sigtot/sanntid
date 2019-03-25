@@ -11,7 +11,7 @@ import (
 	"time"
 )
 
-const numFloors = 4 // TODO: Move this maybe
+const numFloors = 4
 const topFloor = numFloors - 1
 const bottomFloor = 0
 const moduleName = "ORDER HANDLER"
