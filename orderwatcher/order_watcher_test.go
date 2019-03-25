@@ -8,6 +8,7 @@ import (
 	bolt "go.etcd.io/bbolt"
 	"os"
 	"strconv"
+	"sync"
 	"testing"
 	"time"
 )
@@ -68,7 +69,8 @@ func TestStartOrderWatcher(t *testing.T) {
 
 	callsForSale := make(chan types.Call)
 	quit := make(chan int)
-	StartOrderWatcher(callsForSale, db, quit)
+	var wg sync.WaitGroup
+	StartOrderWatcher(callsForSale, db, quit, &wg)
 	StartDbDistributor(db, testDbName, quit)
 
 	orders := []types.Order{

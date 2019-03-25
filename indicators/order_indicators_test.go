@@ -18,7 +18,7 @@ func TestStartHandlingIndicators(t *testing.T) {
 	elevio.Init("localhost:15657", 4)
 	var wg sync.WaitGroup
 	quit := make(chan int)
-	StartIndicatorHandler(quit, wg)
+	StartIndicatorHandler(quit, &wg)
 	ackPubChan := publish.StartPublisher(pubsub.AckDiscoveryPort)
 	orderDeliveredPubChan := publish.StartPublisher(pubsub.OrderDeliveredDiscoveryPort)
 	call := types.Call{Type: types.Cab, Floor: 2, Dir: types.InvalidDir, ElevatorID: ""}

@@ -52,7 +52,7 @@ func main() {
 	buttons.StartButtonHandler(buttonEvents, callsForSale)
 
 	quitIndicators := make(chan int)
-	indicators.StartIndicatorHandler(quitIndicators, wg)
+	indicators.StartIndicatorHandler(quitIndicators, &wg)
 
 	oh, newOrders := orders.StartOrderHandler(currentGoals, goalArrivals, elevator)
 
@@ -65,7 +65,7 @@ func main() {
 		panic(err)
 	}
 	quitOrderWatcher := make(chan int)
-	orderWatcherQuitAck := orderwatcher.StartOrderWatcher(callsForSale, orderWatcherDb, quitOrderWatcher)
+	orderwatcher.StartOrderWatcher(callsForSale, orderWatcherDb, quitOrderWatcher, &wg)
 
 	quitDistributor := make(chan int)
 	orderwatcher.StartDbDistributor(orderWatcherDb, dbName, quitDistributor)
@@ -75,11 +75,11 @@ func main() {
 	sigInt := make(chan os.Signal, 1)
 	signal.Notify(sigInt, os.Interrupt)
 	<-sigInt
-	signal.Stop(sigInt)
+	signal.Stop(sigInt) // Stop trapping interrupt signal to give it back its usual behavior
+
 	utils.Log(log, moduleName, "Gracefully stopping all modules. Do ^C again to force")
 	quitOrderWatcher <- 0
 	quitIndicators <- 0
-	<-orderWatcherQuitAck
 	err = orderWatcherDb.Close()
 	if err != nil {
 		panic(err)

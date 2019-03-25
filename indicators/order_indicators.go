@@ -18,10 +18,7 @@ const topFloor = numFloors - 1
 const bottomFloor = 0
 const moduleName = "ORDER IND"
 
-func StartIndicatorHandler(quit <-chan int, wg sync.WaitGroup) {
-	wg.Add(1)
-	defer wg.Done()
-
+func StartIndicatorHandler(quit <-chan int, wg *sync.WaitGroup) {
 	ackSubChan, _ := subscribe.StartSubscriber(pubsub.AckDiscoveryPort, pubsub.AckTopic)
 	orderDeliveredSubChan, _ := subscribe.StartSubscriber(pubsub.OrderDeliveredDiscoveryPort, pubsub.OrderDeliveredTopic)
 	allOff()
@@ -31,6 +28,9 @@ func StartIndicatorHandler(quit <-chan int, wg sync.WaitGroup) {
 	}
 	log := logrus.New()
 	go func() {
+		wg.Add(1)
+		defer wg.Done()
+
 		for {
 			select {
 			case ackJson := <-ackSubChan:

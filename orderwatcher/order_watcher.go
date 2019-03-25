@@ -17,6 +17,7 @@ import (
 	"math/rand"
 	"os"
 	"strconv"
+	"sync"
 	"time"
 )
 
@@ -41,16 +42,17 @@ type WatchThis struct {
 	Call       types.Call
 }
 
-func StartOrderWatcher(callsForSale chan types.Call, db *bolt.DB, quit <-chan int) chan int {
+func StartOrderWatcher(callsForSale chan types.Call, db *bolt.DB, quit <-chan int, wg *sync.WaitGroup) {
 	ackSubChan, _ := subscribe.StartSubscriber(pubsub.AckDiscoveryPort, pubsub.AckTopic)
 	orderDeliveredSubChan, _ := subscribe.StartSubscriber(pubsub.OrderDeliveredDiscoveryPort, pubsub.OrderDeliveredTopic)
 	dbSubChan, _ := subscribe.StartSubscriber(pubsub.DbDiscoveryPort, pubsub.DbDiscoveryTopic)
 
-	quitAck := make(chan int)
-
 	elevatorID, _ := mac.GetMacAddr()
 	log := logrus.New()
 	go func() {
+		wg.Add(1)
+		defer wg.Done()
+
 		dbTraversalTicker := time.NewTicker(dbTraversalInterval * time.Millisecond)
 		defer dbTraversalTicker.Stop()
 		for {
@@ -177,12 +179,10 @@ func StartOrderWatcher(callsForSale chan types.Call, db *bolt.DB, quit <-chan in
 
 			case <-quit:
 				utils.Log(log, moduleName, "And now my watch is ended")
-				quitAck <- 0
 				return
 			}
 		}
 	}()
-	return quitAck
 }
 
 func writeToDb(db *bolt.DB, bName string, key string, value []byte) error {
