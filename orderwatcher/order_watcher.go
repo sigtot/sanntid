@@ -49,8 +49,8 @@ func StartOrderWatcher(callsForSale chan types.Call, db *bolt.DB, quit <-chan in
 
 	elevatorID, _ := mac.GetMacAddr()
 	log := logrus.New()
+	wg.Add(1)
 	go func() {
-		wg.Add(1)
 		defer wg.Done()
 
 		dbTraversalTicker := time.NewTicker(dbTraversalInterval * time.Millisecond)

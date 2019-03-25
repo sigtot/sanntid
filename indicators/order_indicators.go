@@ -27,8 +27,8 @@ func StartIndicatorHandler(quit <-chan int, wg *sync.WaitGroup) {
 		panic(err)
 	}
 	log := logrus.New()
+	wg.Add(1)
 	go func() {
-		wg.Add(1)
 		defer wg.Done()
 
 		for {
