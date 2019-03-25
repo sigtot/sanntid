@@ -14,6 +14,8 @@ import (
 const TTL = 5 * time.Second
 const moduleName = "PUBLISHER"
 
+const logString = "%-15s%s"
+
 type subscriber struct {
 	IP    string
 	Topic string
@@ -91,7 +93,7 @@ func publish(addr string, body []byte) {
 		if strings.Contains(err.Error(), "connection refused") || strings.Contains(err.Error(), "network is unreachable") || strings.Contains(err.Error(), "i/o timeout") || strings.Contains(err.Error(), "connection reset by peer") {
 			logrus.WithFields(logrus.Fields{
 				"IP": addr,
-			}).Warnf("%-15s %s", moduleName, "Could not publish")
+			}).Warnf(logString, moduleName, "Could not publish")
 		} else {
 			panic(err)
 		}
@@ -120,5 +122,5 @@ func logNewSub(log *logrus.Logger, moduleName string, info string, sub subscribe
 	log.WithFields(logrus.Fields{
 		"IP":    sub.IP,
 		"topic": sub.Topic,
-	}).Infof("%-15s %s", moduleName, info)
+	}).Infof(logString, moduleName, info)
 }

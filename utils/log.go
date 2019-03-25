@@ -5,6 +5,8 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+const logString = "%-15s%s"
+
 func LogBid(log *logrus.Logger, moduleName string, info string, bid types.Bid) {
 	log.WithFields(logrus.Fields{
 		"type":  bid.Call.Type,
@@ -12,7 +14,7 @@ func LogBid(log *logrus.Logger, moduleName string, info string, bid types.Bid) {
 		"dir":   bid.Call.Dir,
 		"price": bid.Price,
 		"id":    bid.ElevatorID,
-	}).Infof("%-15s %s", moduleName, info)
+	}).Infof(logString, moduleName, info)
 }
 
 func LogAck(log *logrus.Logger, moduleName string, info string, ack types.Ack) {
@@ -25,7 +27,7 @@ func LogCall(log *logrus.Logger, moduleName string, info string, call types.Call
 		"floor": call.Floor,
 		"dir":   call.Dir,
 		"id":    call.ElevatorID,
-	}).Infof("%-15s %s", moduleName, info)
+	}).Infof(logString, moduleName, info)
 }
 
 func LogOrder(log *logrus.Logger, moduleName string, info string, order types.Order) {
@@ -33,5 +35,5 @@ func LogOrder(log *logrus.Logger, moduleName string, info string, order types.Or
 }
 
 func Log(log *logrus.Logger, moduleName string, info string) {
-	log.Infof("%-15s %s", moduleName, info)
+	log.Infof(logString, moduleName, info)
 }

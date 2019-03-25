@@ -22,6 +22,7 @@ const elevServerHost = "localhost"
 const numElevFloors = 4
 
 const moduleName = "ELEV"
+const logString = "%-15s%s"
 
 type Elev struct {
 	dir      elevio.MotorDirection
@@ -42,7 +43,7 @@ func StartElevController(goalArrivals chan<- types.Order, currentGoals <-chan ty
 	}
 	log.WithFields(logrus.Fields{
 		"addr": elevServerAddr,
-	}).Infof("%-15s %s", moduleName, "Successfully initiated elev server")
+	}).Infof(logString, moduleName, "Successfully initiated elev server")
 
 	atGoal := make(chan int, 1024)
 

@@ -30,6 +30,7 @@ const baseTTD = 10000
 const randTTDOffset = 2000
 
 const moduleName = "ORDER WATCHER"
+const logString = "%-15s%s"
 
 const dbCopyDir = "/tmp"
 const dbCopyName = "orderwatcher_copy.db"
@@ -175,7 +176,7 @@ func StartOrderWatcher(callsForSale chan types.Call, db *bolt.DB, quit <-chan in
 				computationDuration := time.Now().Sub(timeBefore)
 				log.WithFields(logrus.Fields{
 					"took": fmt.Sprintf("%.3fs", computationDuration.Seconds()),
-				}).Infof("%-15s %s", moduleName, "Received db and synced")
+				}).Infof(logString, moduleName, "Received db and synced")
 
 			case <-quit:
 				utils.Log(log, moduleName, "And now my watch is ended")
@@ -250,5 +251,5 @@ func logWatchThis(log *logrus.Logger, moduleName string, info string, wt WatchTh
 		"dir":   wt.Call.Dir,
 		"id":    wt.ElevatorID,
 		"time":  wt.Time,
-	}).Infof("%-15s %s", moduleName, info)
+	}).Infof(logString, moduleName, info)
 }
