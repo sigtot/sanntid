@@ -16,9 +16,14 @@ const topFloor = numFloors - 1
 const bottomFloor = 0
 const moduleName = "ORDER HANDLER"
 
+const counterDelay = 12000
+const tickInterval = 1000
+const deliveryDelayWeight = 1
+
 type OrderHandler struct {
-	orders []types.Order
-	elev   ElevInterface
+	orders         []types.Order
+	delayedCounter DelayedCounter
+	elev           ElevInterface
 }
 
 type ElevInterface interface {
@@ -26,22 +31,27 @@ type ElevInterface interface {
 	GetPos() float64
 }
 
-var log = logrus.New()
-
 func StartOrderHandler(
 	currentGoals chan types.Order,
 	arrivals chan types.Order,
 	elev ElevInterface) (*OrderHandler, chan types.Order) {
 	orderDeliveredPubChan := publish.StartPublisher(pubsub.OrderDeliveredDiscoveryPort)
-	oh := OrderHandler{elev: elev}
 	newOrders := make(chan types.Order)
+
+	oh := OrderHandler{elev: elev}
 
 	var log = logrus.New()
 
 	go func() {
+		oh.delayedCounter.Start(counterDelay*time.Millisecond, tickInterval*time.Millisecond)
+		defer oh.delayedCounter.Stop()
+
 		for {
 			select {
 			case order := <-newOrders:
+				if len(oh.orders) == 0 {
+					oh.delayedCounter.Reset()
+				}
 				// Set next goal
 				oh.orders = append(oh.orders, order)
 				nextGoal, err := getNextGoal(oh.orders, oh.elev)
@@ -57,6 +67,9 @@ func StartOrderHandler(
 						break
 					}
 				}
+
+				oh.delayedCounter.Reset()
+
 				// Publish order delivered
 				arrivalJson, err := json.Marshal(arrival)
 				okOrPanic(err)
@@ -88,8 +101,11 @@ func StartOrderHandler(
 func (oh *OrderHandler) GetPrice(order types.Call) int {
 	price, err := calcPriceFromQueue(types.Order{Call: order}, oh.orders, oh.elev.GetPos(), oh.elev.GetDir())
 	okOrPanic(err)
+	if len(oh.orders) > 0 {
+		count := <-oh.delayedCounter.Count
+		price += int(deliveryDelayWeight * count)
+	}
 	return price
-	// TODO: Implement base price
 }
 
 func getNextGoal(orders []types.Order, elev ElevInterface) (types.Order, error) {
