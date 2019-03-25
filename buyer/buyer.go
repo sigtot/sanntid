@@ -21,8 +21,8 @@ type PriceCalculator interface {
 func StartBuying(priceCalc PriceCalculator, newOrders chan types.Order) {
 	bidPubChan := publish.StartPublisher(pubsub.BidDiscoveryPort)
 	ackPubChan := publish.StartPublisher(pubsub.AckDiscoveryPort)
-	forSaleSubChan, _ := subscribe.StartSubscriber(pubsub.SalesDiscoveryPort)
-	soldToSubChan, _ := subscribe.StartSubscriber(pubsub.SoldToDiscoveryPort)
+	forSaleSubChan, _ := subscribe.StartSubscriber(pubsub.SalesDiscoveryPort, pubsub.SalesTopic)
+	soldToSubChan, _ := subscribe.StartSubscriber(pubsub.SoldToDiscoveryPort, pubsub.SalesTopic)
 
 	elevatorID, _ := mac.GetMacAddr()
 

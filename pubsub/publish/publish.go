@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"fmt"
 	"github.com/sigtot/sanntid/hotchan"
-	"github.com/sigtot/sanntid/utils"
 	"github.com/sirupsen/logrus"
 	"net"
 	"net/http"
@@ -15,12 +14,17 @@ import (
 const TTL = 5 * time.Second
 const moduleName = "PUBLISHER"
 
+type subscriber struct {
+	IP    string
+	Topic string
+}
+
 // StartPublisher starts a publisher. It will listen for subscribers on the given discoveryPort.
 // Items in the returned buffered channel will be published to all current subscribers.
 func StartPublisher(discoveryPort int) chan []byte {
 	thingsToPublish := make(chan []byte, 1024)
-	discoveredIPs := make(chan string)
-	go listenForSubscribers(discoveryPort, discoveredIPs)
+	discoveredSubs := make(chan subscriber)
+	go listenForSubscribers(discoveryPort, discoveredSubs)
 	go func() {
 		log := logrus.New()
 		subHotChan := hotchan.HotChan{}
@@ -28,22 +32,23 @@ func StartPublisher(discoveryPort int) chan []byte {
 		defer subHotChan.Stop()
 		for {
 			select {
-			case ip := <-discoveredIPs:
+			case sub := <-discoveredSubs:
+				subIP := sub.IP
 				numSubsBefore := len(subHotChan.Out)
 				subs := make(chan hotchan.Item, 1024)
-				newSub := hotchan.Item{Val: ip, TTL: TTL}
-				subs <- newSub
+				newSubI := hotchan.Item{Val: subIP, TTL: TTL}
+				subs <- newSubI
 				for len(subHotChan.Out) > 0 {
-					sub := <-subHotChan.Out
-					if sub.Val != newSub.Val {
-						subs <- sub
+					subI := <-subHotChan.Out
+					if subI.Val != newSubI.Val {
+						subs <- subI
 					}
 				}
 				for len(subs) > 0 {
 					subHotChan.Insert(<-subs)
 				}
 				if len(subHotChan.Out) > numSubsBefore {
-					utils.LogNewSub(log, moduleName, "Discovered new subscriber", newSub.Val.(string))
+					logNewSub(log, moduleName, "Discovered new subscriber", sub)
 				}
 			case thingToPublish := <-thingsToPublish:
 				fanOutPublish(thingToPublish, subHotChan)
@@ -53,7 +58,7 @@ func StartPublisher(discoveryPort int) chan []byte {
 	return thingsToPublish
 }
 
-func listenForSubscribers(discoveryPort int, discoveredIPs chan string) {
+func listenForSubscribers(discoveryPort int, discoveredSubs chan subscriber) {
 	lAddr, err := net.ResolveUDPAddr("udp", fmt.Sprintf(":%d", discoveryPort))
 	okOrPanic(err)
 
@@ -68,7 +73,9 @@ func listenForSubscribers(discoveryPort int, discoveredIPs chan string) {
 	for {
 		_, addr, err := conn.ReadFromUDP(buf)
 		okOrPanic(err)
-		discoveredIPs <- addr.String()
+		topic := strings.TrimRight(string(buf), "\x00") // Trim away zero values from buf when converting to string
+		sub := subscriber{IP: addr.String(), Topic: topic}
+		discoveredSubs <- sub
 	}
 }
 
@@ -107,4 +114,11 @@ func fanOutPublish(thingToPublish []byte, subHotChan hotchan.HotChan) {
 		go publish(sub.Val.(string), thingToPublish)
 		subHotChan.Insert(sub)
 	}
+}
+
+func logNewSub(log *logrus.Logger, moduleName string, info string, sub subscriber) {
+	log.WithFields(logrus.Fields{
+		"IP":    sub.IP,
+		"topic": sub.Topic,
+	}).Infof("%-15s %s", moduleName, info)
 }

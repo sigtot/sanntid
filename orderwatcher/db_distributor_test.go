@@ -29,7 +29,7 @@ func TestStartDbDistributor(t *testing.T) {
 		t.Fatal("Could not write to db")
 	}
 
-	dbSubChan, _ := subscribe.StartSubscriber(pubsub.DbDiscoveryPort)
+	dbSubChan, _ := subscribe.StartSubscriber(pubsub.DbDiscoveryPort, pubsub.DbDiscoveryTopic)
 
 	quit := make(chan int)
 	StartDbDistributor(db, testDbName, quit)
@@ -62,7 +62,7 @@ func TestStartDbDistributor(t *testing.T) {
 	db2.Close()
 	for {
 		select {
-		case <- dbSubChan:
+		case <-dbSubChan:
 			println("Got state")
 		}
 	}

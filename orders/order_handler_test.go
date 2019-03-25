@@ -29,7 +29,7 @@ func TestOrderHandler(t *testing.T) {
 
 	mockElev := MockElevatorController{dir: elevio.MdUp, pos: 2.0}
 
-	orderDeliveredSubChan, _ := subscribe.StartSubscriber(pubsub.OrderDeliveredDiscoveryPort)
+	orderDeliveredSubChan, _ := subscribe.StartSubscriber(pubsub.OrderDeliveredDiscoveryPort, "order del")
 
 	_, newOrders := StartOrderHandler(currentGoals, arrivals, mockElev)
 

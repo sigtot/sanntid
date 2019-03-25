@@ -22,9 +22,9 @@ func TestSeller(t *testing.T) {
 
 	bidPubChan := publish.StartPublisher(pubsub.BidDiscoveryPort)
 	ackPubChan := publish.StartPublisher(pubsub.AckDiscoveryPort)
-	forSaleSubChan, _ := subscribe.StartSubscriber(pubsub.SalesDiscoveryPort)
-	soldToSubChan, _ := subscribe.StartSubscriber(pubsub.SoldToDiscoveryPort)
-	ackSubChan, _ := subscribe.StartSubscriber(pubsub.AckDiscoveryPort)
+	forSaleSubChan, _ := subscribe.StartSubscriber(pubsub.SalesDiscoveryPort, pubsub.SalesTopic)
+	soldToSubChan, _ := subscribe.StartSubscriber(pubsub.SoldToDiscoveryPort, pubsub.SoldToTopic)
+	ackSubChan, _ := subscribe.StartSubscriber(pubsub.AckDiscoveryPort, pubsub.AckTopic)
 
 	firstCall := types.Call{Type: types.Hall, Floor: 3, Dir: types.Down, ElevatorID: ""}
 	newCalls <- firstCall

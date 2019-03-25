@@ -18,8 +18,8 @@ const bottomFloor = 0
 const moduleName = "ORDER INDICATORS"
 
 func StartIndicatorHandler() {
-	ackSubChan, _ := subscribe.StartSubscriber(pubsub.AckDiscoveryPort)
-	orderDeliveredSubChan, _ := subscribe.StartSubscriber(pubsub.OrderDeliveredDiscoveryPort)
+	ackSubChan, _ := subscribe.StartSubscriber(pubsub.AckDiscoveryPort, pubsub.AckTopic)
+	orderDeliveredSubChan, _ := subscribe.StartSubscriber(pubsub.OrderDeliveredDiscoveryPort, pubsub.OrderDeliveredTopic)
 	initIndicators()
 	macAddr, err := mac.GetMacAddr()
 	if err != nil {

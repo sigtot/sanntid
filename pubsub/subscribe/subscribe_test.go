@@ -15,7 +15,7 @@ type Dude struct {
 
 func TestSubscriber(t *testing.T) {
 	// Listen for published data
-	receivedBufs, httpPort := StartSubscriber(41000)
+	receivedBufs, httpPort := StartSubscriber(41000, "sales")
 
 	// Publish
 	myDude := Dude{WeekDay: "Wednesday"}

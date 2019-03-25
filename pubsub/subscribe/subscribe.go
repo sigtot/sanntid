@@ -11,7 +11,7 @@ import (
 	"time"
 )
 
-const aliveSignalInterval  = 300
+const aliveSignalInterval = 300
 
 func findAvailPort() (port int) {
 	for {
@@ -36,7 +36,7 @@ func findAvailPort() (port int) {
 // StartSubscriber starts a subscriber with a given discoveryPort and publishPort.
 // Received items are made available in the returned channel.
 // The returned httpPort is the port of the subscriber's http server
-func StartSubscriber(discoveryPort int) (receivedBufs chan []byte, httpPort int) {
+func StartSubscriber(discoveryPort int, topic string) (receivedBufs chan []byte, httpPort int) {
 	receivedBufs = make(chan []byte, 1024)
 	httpPort = findAvailPort()
 	go func() {
@@ -49,7 +49,7 @@ func StartSubscriber(discoveryPort int) (receivedBufs chan []byte, httpPort int)
 		}
 	}()
 	time.Sleep(500 * time.Millisecond) // Wait for server to start
-	go sendAliveSignal(discoveryPort, httpPort)
+	go sendAliveSignal(discoveryPort, httpPort, topic)
 	return receivedBufs, httpPort
 }
 
@@ -64,10 +64,10 @@ func subHandler(w http.ResponseWriter, r *http.Request, receivedBufs chan []byte
 	w.WriteHeader(http.StatusOK)
 }
 
-func sendAliveSignal(discoveryPort int, publishPort int) {
+func sendAliveSignal(discoveryPort int, publishPort int, topic string) {
 	sAddr, err := net.ResolveUDPAddr("udp", fmt.Sprintf("255.255.255.255:%d", discoveryPort))
 	okOrPanic(err)
-	lAddr, err := net.ResolveUDPAddr("udp",fmt.Sprintf("localhost:%d", discoveryPort))
+	lAddr, err := net.ResolveUDPAddr("udp", fmt.Sprintf("localhost:%d", discoveryPort))
 	okOrPanic(err)
 	conn, err := net.ListenPacket("udp", fmt.Sprintf(":%d", publishPort))
 	okOrPanic(err)
@@ -77,10 +77,10 @@ func sendAliveSignal(discoveryPort int, publishPort int) {
 	}()
 
 	for {
-		_, err = conn.WriteTo([]byte("sup"), sAddr)
+		_, err = conn.WriteTo([]byte(topic), sAddr)
 		if err != nil {
-			if strings.Contains(err.Error(), "network is unreachable"){
-				_, err = conn.WriteTo([]byte("sup"), lAddr)
+			if strings.Contains(err.Error(), "network is unreachable") {
+				_, err = conn.WriteTo([]byte(topic), lAddr)
 				okOrPanic(err)
 			} else {
 				panic(err)

@@ -33,8 +33,8 @@ func StartSelling(newCalls chan types.Call) {
 
 	forSalePubChan := publish.StartPublisher(pubsub.SalesDiscoveryPort)
 	soldToPubChan := publish.StartPublisher(pubsub.SoldToDiscoveryPort)
-	bidSubChan, _ := subscribe.StartSubscriber(pubsub.BidDiscoveryPort)
-	ackSubChan, _ := subscribe.StartSubscriber(pubsub.AckDiscoveryPort)
+	bidSubChan, _ := subscribe.StartSubscriber(pubsub.BidDiscoveryPort, pubsub.BidTopic)
+	ackSubChan, _ := subscribe.StartSubscriber(pubsub.AckDiscoveryPort, pubsub.AckTopic)
 
 	var log = logrus.New()
 

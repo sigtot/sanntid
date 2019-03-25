@@ -35,7 +35,6 @@ const dbCopyName = "orderwatcher_copy.db"
 const dbCopyPerms = 0600
 const dbCopyTimeout = 500
 
-
 type WatchThis struct {
 	ElevatorID string
 	Time       time.Time
@@ -43,9 +42,9 @@ type WatchThis struct {
 }
 
 func StartOrderWatcher(callsForSale chan types.Call, db *bolt.DB, quit <-chan int) chan int {
-	ackSubChan, _ := subscribe.StartSubscriber(pubsub.AckDiscoveryPort)
-	orderDeliveredSubChan, _ := subscribe.StartSubscriber(pubsub.OrderDeliveredDiscoveryPort)
-	dbSubChan, _ := subscribe.StartSubscriber(pubsub.DbDiscoveryPort)
+	ackSubChan, _ := subscribe.StartSubscriber(pubsub.AckDiscoveryPort, pubsub.AckTopic)
+	orderDeliveredSubChan, _ := subscribe.StartSubscriber(pubsub.OrderDeliveredDiscoveryPort, pubsub.OrderDeliveredTopic)
+	dbSubChan, _ := subscribe.StartSubscriber(pubsub.DbDiscoveryPort, pubsub.DbDiscoveryTopic)
 
 	quitAck := make(chan int)
 
@@ -124,7 +123,7 @@ func StartOrderWatcher(callsForSale chan types.Call, db *bolt.DB, quit <-chan in
 					panic(fmt.Sprintf("Could not unmarshal db message %s", err.Error()))
 				}
 				if dbMsg.ElevatorID == elevatorID {
-					break  // No need to sync with local db
+					break // No need to sync with local db
 				}
 				timeBefore := time.Now()
 				// Uncompress db file
@@ -187,7 +186,7 @@ func StartOrderWatcher(callsForSale chan types.Call, db *bolt.DB, quit <-chan in
 }
 
 func writeToDb(db *bolt.DB, bName string, key string, value []byte) error {
-	if err := db.Update(func(tx *bolt.Tx) error {  // Close db after operations? Also these should maybe be merges to one transaction?
+	if err := db.Update(func(tx *bolt.Tx) error { // Close db after operations? Also these should maybe be merges to one transaction?
 		_, err := tx.CreateBucketIfNotExists([]byte(bName))
 		return err
 	}); err != nil {
