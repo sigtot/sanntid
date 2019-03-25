@@ -12,6 +12,8 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+const moduleName = "BUYER"
+
 type PriceCalculator interface {
 	GetPrice(types.Call) int
 }
@@ -49,7 +51,7 @@ func StartBuying(priceCalc PriceCalculator, newOrders chan types.Order) {
 				}
 				bidPubChan <- js
 
-				utils.LogBid(log, "BUYER", "Placed bid on order", bid)
+				utils.LogBid(log, moduleName, "Placed bid on order", bid)
 			case soldToJson := <-soldToSubChan:
 				soldTo := types.SoldTo{}
 				err := json.Unmarshal(soldToJson, &soldTo)
@@ -67,7 +69,7 @@ func StartBuying(priceCalc PriceCalculator, newOrders chan types.Order) {
 					ackPubChan <- js
 					newOrders <- types.Order{Call: soldTo.Call}
 
-					utils.LogAck(log, "BUYER", "Bought order", ack)
+					utils.LogAck(log, moduleName, "Bought order", ack)
 				}
 			}
 		}

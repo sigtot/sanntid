@@ -14,6 +14,7 @@ import (
 const numFloors = 4 // TODO: Move this maybe
 const topFloor = numFloors - 1
 const bottomFloor = 0
+const moduleName = "ORDER HANDLER"
 
 type OrderHandler struct {
 	orders []types.Order
@@ -45,14 +46,14 @@ func StartOrderHandler(
 				oh.orders = append(oh.orders, order)
 				nextGoal, err := getNextGoal(oh.orders, oh.elev)
 				okOrPanic(err)
-				utils.LogOrder(log, "ORDER HANDLER", "Set next goal", nextGoal)
+				utils.LogOrder(log, moduleName, "Set next goal", nextGoal)
 				currentGoals <- nextGoal
 			case arrival := <-arrivals:
 				// Delete corresponding order
 				for i, v := range oh.orders {
 					if OrdersEqual(v, arrival) {
 						oh.orders = append(oh.orders[:i], oh.orders[i+1:]...)
-						utils.LogOrder(log, "ORDER HANDLER", "Deleted Order", arrival)
+						utils.LogOrder(log, moduleName, "Deleted Order", arrival)
 						break
 					}
 				}
@@ -74,7 +75,7 @@ func StartOrderHandler(
 				// Set next goal
 				if len(oh.orders) > 0 {
 					nextGoal, err := getNextGoal(oh.orders, oh.elev)
-					utils.LogOrder(log, "ORDER HANDLER", "Set next goal", nextGoal)
+					utils.LogOrder(log, moduleName, "Set next goal", nextGoal)
 					okOrPanic(err)
 					currentGoals <- nextGoal
 				}

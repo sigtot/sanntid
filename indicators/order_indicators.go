@@ -8,11 +8,14 @@ import (
 	"github.com/sigtot/sanntid/pubsub"
 	"github.com/sigtot/sanntid/pubsub/subscribe"
 	"github.com/sigtot/sanntid/types"
+	"github.com/sigtot/sanntid/utils"
+	"github.com/sirupsen/logrus"
 )
 
 const numFloors = 4 // TODO: Move this maybe
 const topFloor = numFloors - 1
 const bottomFloor = 0
+const moduleName = "ORDER INDICATORS"
 
 func StartIndicatorHandler() {
 	ackSubChan, _ := subscribe.StartSubscriber(pubsub.AckDiscoveryPort)
@@ -22,6 +25,7 @@ func StartIndicatorHandler() {
 	if err != nil {
 		panic(err)
 	}
+	log := logrus.New()
 	go func() {
 		for {
 			select {
@@ -36,6 +40,7 @@ func StartIndicatorHandler() {
 				}
 
 			case orderJson := <-orderDeliveredSubChan:
+				utils.Log(log, moduleName, "Got order delivered")
 				order := types.Order{}
 				err := json.Unmarshal(orderJson, &order)
 				if err != nil {

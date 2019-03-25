@@ -2,6 +2,7 @@ package elev
 
 import (
 	"errors"
+	"fmt"
 	"github.com/sigtot/elevio"
 	"github.com/sigtot/sanntid/types"
 	"github.com/sigtot/sanntid/utils"
@@ -15,9 +16,11 @@ const doorOpenWaitTime = 3000
 // It's timeout time
 const initTimeoutTime = 3000
 
-const elevServerAddr = "localhost:15657"
+const elevServerHost = "localhost"
 
 const numElevFloors = 4
+
+const moduleName = "ELEV"
 
 type Elev struct {
 	dir      elevio.MotorDirection
@@ -27,14 +30,18 @@ type Elev struct {
 	doorOpen bool
 }
 
-func StartElevController(goalArrivals chan<- types.Order, currentGoals <-chan types.Order, floorArrivals <-chan int) *Elev {
+func StartElevController(goalArrivals chan<- types.Order, currentGoals <-chan types.Order, floorArrivals <-chan int, elevPort int) *Elev {
+	var log = logrus.New()
+
 	elev := Elev{}
-	err := elev.Init(elevServerAddr, numElevFloors)
+	elevServerAddr := fmt.Sprintf("%s:%d", elevServerHost, elevPort)
+	err := elev.Init(elevServerAddr, numElevFloors, floorArrivals)
 	if err != nil {
 		panic(err)
 	}
-
-	var log = logrus.New()
+	log.WithFields(logrus.Fields{
+		"addr": elevServerAddr,
+	}).Infof("%-15s %s", moduleName, "Successfully initiated elev server")
 
 	atGoal := make(chan int, 1024)
 
@@ -60,7 +67,7 @@ func StartElevController(goalArrivals chan<- types.Order, currentGoals <-chan ty
 				startAgain = time.After(doorOpenWaitTime * time.Millisecond)
 				elevio.SetDoorOpenLamp(true)
 				goalArrivals <- elev.goal
-				utils.Log(log, "ELEV", "Opened doors")
+				utils.Log(log, moduleName, "Opened doors")
 			case floorArrival := <-floorArrivals:
 				if floorArrival < 0 {
 					// Between floors
@@ -81,18 +88,15 @@ func StartElevController(goalArrivals chan<- types.Order, currentGoals <-chan ty
 				if !elev.atGoal() {
 					elev.start()
 				}
-				utils.Log(log, "ELEV", "Closed doors")
+				utils.Log(log, moduleName, "Closed doors")
 			}
 		}
 	}()
 	return &elev
 }
 
-func (elev *Elev) Init(addr string, numFloors int) error {
-	var log = logrus.New()
+func (elev *Elev) Init(addr string, numFloors int, floorArrivals <-chan int) error {
 	elevio.Init(addr, numFloors)
-	floorArrivals := make(chan int)
-	go elevio.PollFloorSensor(floorArrivals)
 
 	elev.moving = true
 	elevio.SetMotorDirection(elevio.MdDown)
@@ -110,8 +114,6 @@ L:
 			return errors.New("failed to reach floor within timeout")
 		}
 	}
-
-	utils.Log(log, "ELEV", "Elev init successful")
 
 	return nil
 }

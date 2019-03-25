@@ -69,6 +69,8 @@ func TestStartOrderWatcher(t *testing.T) {
 	callsForSale := make(chan types.Call)
 	quit := make(chan int)
 	StartOrderWatcher(callsForSale, db, quit)
+	StartDbDistributor(db, testDbName, quit)
+
 	orders := []types.Order{
 		{Call: types.Call{Type: types.Hall, Dir: types.Up, Floor: 1}},
 		{Call: types.Call{Type: types.Hall, Dir: types.Down, Floor: 6}},
@@ -83,7 +85,7 @@ func TestStartOrderWatcher(t *testing.T) {
 		ackPubChan <- ackJson
 	}
 
-	time.Sleep(1000 * time.Millisecond)
+	time.Sleep(1500 * time.Millisecond)
 
 	err = db.View(func(tx *bolt.Tx) error {
 		buckets := []*bolt.Bucket{

@@ -28,7 +28,7 @@ func TestSubscriber(t *testing.T) {
 		fmt.Printf("Got response %x %x \n", resp.StatusCode, resp.Status)
 	}
 	err = resp.Body.Close()
-	checkError(err)
+	okOrPanic(err)
 
 	select {
 	case buf := <-receivedBufs:

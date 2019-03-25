@@ -4,10 +4,10 @@ import (
 	"bytes"
 	"compress/gzip"
 	"encoding/json"
-	bolt "github.com/etcd-io/bbolt"
 	"github.com/sigtot/sanntid/mac"
 	"github.com/sigtot/sanntid/pubsub"
 	"github.com/sigtot/sanntid/pubsub/publish"
+	bolt "go.etcd.io/bbolt"
 	"io"
 	"os"
 	"time"
@@ -16,15 +16,13 @@ import (
 const dbDistributeInterval = 10000
 
 type DbMsg struct {
-	Buf        bytes.Buffer
+	Buf        []byte
 	ElevatorID string
 }
 
 func StartDbDistributor(db *bolt.DB, dbName string, quit <-chan int) chan int {
 	dbPubChan := publish.StartPublisher(pubsub.DbDiscoveryPort)
-
 	elevatorID, _ := mac.GetMacAddr()
-
 	quitAck := make(chan int)
 
 	go func() {
@@ -37,16 +35,15 @@ func StartDbDistributor(db *bolt.DB, dbName string, quit <-chan int) chan int {
 					panic(err)
 				}
 
-				dbMsg := DbMsg{Buf: buf, ElevatorID: elevatorID}
-
+				dbMsg := DbMsg{Buf: buf.Bytes(), ElevatorID: elevatorID}
 				dbJson, err := json.Marshal(dbMsg)
 				if err != nil {
 					panic("Could not marshal buffer")
 				}
 
 				dbPubChan <- dbJson
-			case <- quit:
-				quitAck<- 0
+			case <-quit:
+				quitAck <- 0
 			}
 		}
 	}()
@@ -59,8 +56,10 @@ func copyDb(db *bolt.DB, dbName string) (buf bytes.Buffer, err error) {
 		if err != nil {
 			return err
 		}
+		defer func() { err = f.Close() }()
 
 		zw := gzip.NewWriter(&buf)
+		defer func() { err = zw.Close() }()
 
 		if _, err = io.Copy(zw, f); err != nil {
 			return err

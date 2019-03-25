@@ -6,4 +6,5 @@ const (
 	BidDiscoveryPort
 	AckDiscoveryPort
 	OrderDeliveredDiscoveryPort
+	DbDiscoveryPort
 )

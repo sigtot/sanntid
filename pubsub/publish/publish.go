@@ -8,10 +8,12 @@ import (
 	"github.com/sirupsen/logrus"
 	"net"
 	"net/http"
+	"strings"
 	"time"
 )
 
 const TTL = 5 * time.Second
+const moduleName = "PUBLISHER"
 
 // StartPublisher starts a publisher. It will listen for subscribers on the given discoveryPort.
 // Items in the returned buffered channel will be published to all current subscribers.
@@ -41,7 +43,7 @@ func StartPublisher(discoveryPort int) chan []byte {
 					subHotChan.Insert(<-subs)
 				}
 				if len(subHotChan.Out) > numSubsBefore {
-					utils.LogNewSub(log, "PUBLISHER", "Discovered new subscriber", newSub.Val.(string))
+					utils.LogNewSub(log, moduleName, "Discovered new subscriber", newSub.Val.(string))
 				}
 			case thingToPublish := <-thingsToPublish:
 				fanOutPublish(thingToPublish, subHotChan)
@@ -53,24 +55,24 @@ func StartPublisher(discoveryPort int) chan []byte {
 
 func listenForSubscribers(discoveryPort int, discoveredIPs chan string) {
 	lAddr, err := net.ResolveUDPAddr("udp", fmt.Sprintf(":%d", discoveryPort))
-	checkError(err)
+	okOrPanic(err)
 
 	conn, err := net.ListenUDP("udp", lAddr)
-	checkError(err)
+	okOrPanic(err)
 	defer func() {
 		err := conn.Close()
-		checkError(err)
+		okOrPanic(err)
 	}()
 
 	buf := make([]byte, 1024)
 	for {
 		_, addr, err := conn.ReadFromUDP(buf)
-		checkError(err)
+		okOrPanic(err)
 		discoveredIPs <- addr.String()
 	}
 }
 
-func checkError(err error) {
+func okOrPanic(err error) {
 	if err != nil {
 		panic(err)
 	}
@@ -79,10 +81,18 @@ func checkError(err error) {
 func publish(addr string, body []byte) {
 	resp, err := http.Post(fmt.Sprintf("http://%s", addr), "application/json", bytes.NewBuffer(body))
 	if err != nil {
-		fmt.Printf("Got response %d %s \n", resp.StatusCode, resp.Status)
+		if strings.Contains(err.Error(), "connection refused") || strings.Contains(err.Error(), "network is unreachable") {
+			logrus.WithFields(logrus.Fields{
+				"IP": addr,
+			}).Warnf("%-15s %s", moduleName, "Could not publish")
+		} else {
+			panic(err)
+		}
 	}
-	err = resp.Body.Close()
-	checkError(err)
+	if resp != nil {
+		err = resp.Body.Close()
+		okOrPanic(err)
+	}
 }
 
 // Publish thingToPublish to all subscribers in subHotChan.

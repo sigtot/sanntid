@@ -10,7 +10,7 @@ import (
 
 func TestInit(t *testing.T) {
 	elev := Elev{}
-	err := elev.Init(elevServerAddr, numElevFloors)
+	err := elev.Init(elevServerHost, numElevFloors)
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -24,6 +24,7 @@ const (
 
 const BiddingRoundDuration = time.Millisecond * 10
 const AckWaitDuration = time.Millisecond * 10
+const moduleName = "SELLER"
 
 // StartSelling starts the seller.
 // It will attempt to sell calls sent into the newCalls channel on the network.
@@ -63,7 +64,7 @@ func StartSelling(newCalls chan types.Call) {
 				}
 				forSalePubChan <- js
 
-				utils.LogCall(log, "SELLER", "Started a new sale", itemForSale.Val.(types.Call))
+				utils.LogCall(log, moduleName, "Started a new sale", itemForSale.Val.(types.Call))
 				state = WaitingForBids
 				break
 			}
@@ -83,7 +84,7 @@ func StartSelling(newCalls chan types.Call) {
 						recvBids = append(recvBids, bid)
 					}
 
-					utils.LogBid(log, "SELLER", "Received bid", bid)
+					utils.LogBid(log, moduleName, "Received bid", bid)
 				case <-timeOut:
 					if len(recvBids) == 0 {
 						//Try to sell again
@@ -114,7 +115,7 @@ func StartSelling(newCalls chan types.Call) {
 						panic(fmt.Sprintf("Could not unmarshal ack %s", err.Error()))
 					}
 					if ack.Bid == lowestBid {
-						utils.LogAck(log, "SELLER", "Got ack from lowest bidder", ack)
+						utils.LogAck(log, moduleName, "Got ack from lowest bidder", ack)
 						state = Idle
 						break L2
 					}

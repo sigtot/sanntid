@@ -11,6 +11,8 @@ import (
 	"time"
 )
 
+const aliveSignalInterval  = 300
+
 func findAvailPort() (port int) {
 	for {
 		port = rand.Intn(40000) + 10000
@@ -64,23 +66,31 @@ func subHandler(w http.ResponseWriter, r *http.Request, receivedBufs chan []byte
 
 func sendAliveSignal(discoveryPort int, publishPort int) {
 	sAddr, err := net.ResolveUDPAddr("udp", fmt.Sprintf("255.255.255.255:%d", discoveryPort))
-	checkError(err)
-
+	okOrPanic(err)
+	lAddr, err := net.ResolveUDPAddr("udp",fmt.Sprintf("localhost:%d", discoveryPort))
+	okOrPanic(err)
 	conn, err := net.ListenPacket("udp", fmt.Sprintf(":%d", publishPort))
-	checkError(err)
+	okOrPanic(err)
 	defer func() {
 		err := conn.Close()
-		checkError(err)
+		okOrPanic(err)
 	}()
 
 	for {
 		_, err = conn.WriteTo([]byte("sup"), sAddr)
-		checkError(err)
-		time.Sleep(300 * time.Millisecond)
+		if err != nil {
+			if strings.Contains(err.Error(), "network is unreachable"){
+				_, err = conn.WriteTo([]byte("sup"), lAddr)
+				okOrPanic(err)
+			} else {
+				panic(err)
+			}
+		}
+		time.Sleep(aliveSignalInterval * time.Millisecond)
 	}
 }
 
-func checkError(err error) {
+func okOrPanic(err error) {
 	if err != nil {
 		panic(err)
 	}
