@@ -8,6 +8,7 @@ import (
 	"github.com/sigtot/sanntid/pubsub/publish"
 	"github.com/sigtot/sanntid/types"
 	"log"
+	"sync"
 	"testing"
 	"time"
 )
@@ -15,7 +16,9 @@ import (
 // This test cannot fail. Just watch the lights :)
 func TestStartHandlingIndicators(t *testing.T) {
 	elevio.Init("localhost:15657", 4)
-	StartIndicatorHandler()
+	var wg sync.WaitGroup
+	quit := make(chan int)
+	StartIndicatorHandler(quit, wg)
 	ackPubChan := publish.StartPublisher(pubsub.AckDiscoveryPort)
 	orderDeliveredPubChan := publish.StartPublisher(pubsub.OrderDeliveredDiscoveryPort)
 	call := types.Call{Type: types.Cab, Floor: 2, Dir: types.InvalidDir, ElevatorID: ""}
@@ -38,4 +41,5 @@ func TestStartHandlingIndicators(t *testing.T) {
 	}
 	orderDeliveredPubChan <- js
 	time.Sleep(2 * time.Second)
+	quit <- 0
 }

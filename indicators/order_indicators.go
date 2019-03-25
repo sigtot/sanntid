@@ -10,17 +10,21 @@ import (
 	"github.com/sigtot/sanntid/types"
 	"github.com/sigtot/sanntid/utils"
 	"github.com/sirupsen/logrus"
+	"sync"
 )
 
 const numFloors = 4 // TODO: Move this maybe
 const topFloor = numFloors - 1
 const bottomFloor = 0
-const moduleName = "ORDER INDICATORS"
+const moduleName = "ORDER IND"
 
-func StartIndicatorHandler() {
+func StartIndicatorHandler(quit <-chan int, wg sync.WaitGroup) {
+	wg.Add(1)
+	defer wg.Done()
+
 	ackSubChan, _ := subscribe.StartSubscriber(pubsub.AckDiscoveryPort, pubsub.AckTopic)
 	orderDeliveredSubChan, _ := subscribe.StartSubscriber(pubsub.OrderDeliveredDiscoveryPort, pubsub.OrderDeliveredTopic)
-	initIndicators()
+	allOff()
 	macAddr, err := mac.GetMacAddr()
 	if err != nil {
 		panic(err)
@@ -49,6 +53,10 @@ func StartIndicatorHandler() {
 				if order.Type == types.Hall || order.ElevatorID == macAddr {
 					elevio.SetButtonLamp(getBtnType(order.Type, order.Dir), order.Floor, false)
 				}
+			case <-quit:
+				allOff()
+				utils.Log(log, moduleName, "Turned off all order indicators")
+				return
 			}
 		}
 	}()
@@ -66,7 +74,7 @@ func getBtnType(callType types.CallType, dir types.Direction) elevio.ButtonType 
 	}
 }
 
-func initIndicators() {
+func allOff() {
 	for i := bottomFloor; i <= topFloor; i++ {
 		elevio.SetButtonLamp(elevio.BtnCab, i, false)
 		if i != bottomFloor {

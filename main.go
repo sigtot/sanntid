@@ -17,6 +17,7 @@ import (
 	"math/rand"
 	"os"
 	"os/signal"
+	"sync"
 	"time"
 )
 
@@ -37,6 +38,8 @@ func main() {
 	log := logrus.New()
 	utils.Log(log, moduleName, "Starting elevator")
 
+	var wg sync.WaitGroup
+
 	goalArrivals := make(chan types.Order)
 	currentGoals := make(chan types.Order)
 	floorArrivals := make(chan int)
@@ -48,7 +51,8 @@ func main() {
 	go elevio.PollButtons(buttonEvents)
 	buttons.StartButtonHandler(buttonEvents, callsForSale)
 
-	indicators.StartIndicatorHandler()
+	quitIndicators := make(chan int)
+	indicators.StartIndicatorHandler(quitIndicators, wg)
 
 	oh, newOrders := orders.StartOrderHandler(currentGoals, goalArrivals, elevator)
 
@@ -73,10 +77,13 @@ func main() {
 	<-sigInt
 	signal.Stop(sigInt)
 	utils.Log(log, moduleName, "Gracefully stopping all modules. Do ^C again to force")
-	quitOrderWatcher <- 1
+	quitOrderWatcher <- 0
+	quitIndicators <- 0
 	<-orderWatcherQuitAck
 	err = orderWatcherDb.Close()
 	if err != nil {
 		panic(err)
 	}
+	wg.Wait()
+	utils.Log(log, moduleName, "Stopped elevator")
 }
