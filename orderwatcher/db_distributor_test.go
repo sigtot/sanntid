@@ -59,7 +59,12 @@ func TestStartDbDistributor(t *testing.T) {
 		panic(err)
 	}
 
-	db2.Close()
+	err = db2.Close()
+	if err != nil {
+		panic(err)
+	}
+
+	// TODO: What's this?
 	for {
 		select {
 		case <-dbSubChan:
