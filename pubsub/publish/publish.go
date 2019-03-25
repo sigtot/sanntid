@@ -12,8 +12,8 @@ import (
 )
 
 const TTL = 5 * time.Second
-const moduleName = "PUBLISHER"
 
+const moduleName = "PUBLISHER"
 const logString = "%-15s%s"
 
 type subscriber struct {
