@@ -43,8 +43,9 @@ func main() {
 	goalArrivals := make(chan types.Order)
 	currentGoals := make(chan types.Order)
 	floorArrivals := make(chan int)
+	quitElev := make(chan int)
 	go elevio.PollFloorSensor(floorArrivals)
-	elevator := elev.StartElevController(goalArrivals, currentGoals, floorArrivals, *elevPort)
+	elevator := elev.StartElevController(goalArrivals, currentGoals, floorArrivals, *elevPort, quitElev, &wg)
 
 	callsForSale := make(chan types.Call)
 	buttonEvents := make(chan elevio.ButtonEvent)
@@ -78,8 +79,9 @@ func main() {
 	signal.Stop(sigInt) // Stop trapping interrupt signal to give it back its usual behavior
 
 	utils.Log(log, moduleName, "Gracefully stopping all modules. Do ^C again to force")
-	quitOrderWatcher <- 0
+	quitElev <- 0
 	quitIndicators <- 0
+	quitOrderWatcher <- 0
 	err = orderWatcherDb.Close()
 	if err != nil {
 		panic(err)

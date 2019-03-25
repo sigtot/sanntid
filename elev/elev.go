@@ -7,6 +7,7 @@ import (
 	"github.com/sigtot/sanntid/types"
 	"github.com/sigtot/sanntid/utils"
 	"github.com/sirupsen/logrus"
+	"sync"
 	"time"
 )
 
@@ -18,7 +19,7 @@ const initTimeoutTime = 3000
 
 const elevServerHost = "localhost"
 
-const numElevFloors = 4
+const numElevFloors = 9
 
 const moduleName = "ELEV"
 
@@ -30,7 +31,7 @@ type Elev struct {
 	doorOpen bool
 }
 
-func StartElevController(goalArrivals chan<- types.Order, currentGoals <-chan types.Order, floorArrivals <-chan int, elevPort int) *Elev {
+func StartElevController(goalArrivals chan<- types.Order, currentGoals <-chan types.Order, floorArrivals <-chan int, elevPort int, quit <-chan int, wg *sync.WaitGroup) *Elev {
 	var log = logrus.New()
 
 	elev := Elev{}
@@ -45,8 +46,12 @@ func StartElevController(goalArrivals chan<- types.Order, currentGoals <-chan ty
 
 	atGoal := make(chan int, 1024)
 
+	wg.Add(1)
+
 	var startAgain <-chan time.Time
 	go func() {
+		defer wg.Done()
+
 		for {
 			select {
 			case elev.goal = <-currentGoals:
@@ -89,6 +94,11 @@ func StartElevController(goalArrivals chan<- types.Order, currentGoals <-chan ty
 					elev.start()
 				}
 				utils.Log(log, moduleName, "Closed doors")
+			case <-quit:
+				elevio.SetMotorDirection(elevio.MdStop)
+				elevio.SetDoorOpenLamp(false)
+				utils.Log(log, moduleName, "Turned off motor and closed door")
+				return
 			}
 		}
 	}()
