@@ -4,15 +4,16 @@ import (
 	"net"
 )
 
+// GetMacAddr gets the network-cards mac address
 func GetMacAddr() (string, error) {
-	ifs, err := net.InterfaceByName("eno1")
+	mac, err := net.InterfaceByName("eno1")
 	if err != nil {
-		ifs, err = net.InterfaceByName("eth1")
+		mac, err = net.InterfaceByName("eth1")
 		if err != nil {
 			panic("No MAC address found.")
 		}
 	}
-	as := ifs.HardwareAddr.String()
+	as := mac.HardwareAddr.String()
 
 	return as, nil
 }

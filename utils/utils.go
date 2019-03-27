@@ -6,6 +6,7 @@ import (
 	"github.com/sigtot/sanntid/types"
 )
 
+// OrderDir2MDDir converts an order direction to a motor direction
 func OrderDir2MDDir(orderDir types.Direction) (mdDir elevio.MotorDirection, err error) {
 	if orderDir == types.Up {
 		return elevio.MdUp, nil

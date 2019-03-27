@@ -1,3 +1,6 @@
+/*
+Package buyer contains the logic for bidding on and buying calls.
+*/
 package buyer
 
 import (
@@ -21,11 +24,15 @@ type PriceCalculator interface {
 	GetPrice(types.Call) int
 }
 
+// StartBuying starts a go-routine that bids on and buys calls.
+// It subscribes to sale propositions and sales.
+// It publishes bids and sale acknowledgements.
+// A PriceCalculator interface is used to get the price on a call.
 func StartBuying(priceCalc PriceCalculator, newOrders chan types.Order) {
 	bidPubChan := publish.StartPublisher(pubsub.BidDiscoveryPort)
 	ackPubChan := publish.StartPublisher(pubsub.AckDiscoveryPort)
 	forSaleSubChan, _ := subscribe.StartSubscriber(pubsub.SalesDiscoveryPort, pubsub.SalesTopic)
-	soldToSubChan, _ := subscribe.StartSubscriber(pubsub.SoldToDiscoveryPort, pubsub.SalesTopic)
+	soldToSubChan, _ := subscribe.StartSubscriber(pubsub.SoldToDiscoveryPort, pubsub.SoldToTopic)
 
 	elevatorID, _ := mac.GetMacAddr()
 

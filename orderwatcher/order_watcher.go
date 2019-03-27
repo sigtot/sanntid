@@ -43,6 +43,8 @@ type WatchThis struct {
 	Call       types.Call
 }
 
+// StartOrderWatcher starts the order watcher
+//
 func StartOrderWatcher(callsForSale chan types.Call, db *bolt.DB, quit <-chan int, wg *sync.WaitGroup) {
 	ackSubChan, _ := subscribe.StartSubscriber(pubsub.AckDiscoveryPort, pubsub.AckTopic)
 	orderDeliveredSubChan, _ := subscribe.StartSubscriber(pubsub.OrderDeliveredDiscoveryPort, pubsub.OrderDeliveredTopic)
@@ -162,10 +164,9 @@ func StartOrderWatcher(callsForSale chan types.Call, db *bolt.DB, quit <-chan in
 							return bCopy.ForEach(func(k []byte, v []byte) error {
 								if string(v) == "" {
 									return nil
-								} else {
-									err := b.Put(k, v)
-									return err
 								}
+								err := b.Put(k, v)
+								return err
 							})
 						})
 					})

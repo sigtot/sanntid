@@ -13,23 +13,23 @@ import (
 	"time"
 )
 
-const TTL = 400
+const ttl = 400
 
 // Seller states
 const (
-	Idle = iota
-	WaitingForBids
-	WaitingForAck
+	idle = iota
+	waitingForBids
+	waitingForAck
 )
 
-const BiddingRoundDuration = time.Millisecond * 10
-const AckWaitDuration = time.Millisecond * 10
+const biddingRoundDuration = time.Millisecond * 10
+const ackWaitDuration = time.Millisecond * 10
 const moduleName = "SELLER"
 
 // StartSelling starts the seller.
 // It will attempt to sell calls sent into the newCalls channel on the network.
 func StartSelling(newCalls chan types.Call) {
-	state := Idle
+	state := idle
 
 	forSalePubChan := publish.StartPublisher(pubsub.SalesDiscoveryPort)
 	soldToPubChan := publish.StartPublisher(pubsub.SoldToDiscoveryPort)
@@ -46,7 +46,7 @@ func StartSelling(newCalls chan types.Call) {
 	go func() {
 		for {
 			val := <-newCalls
-			hcItem := hotchan.Item{Val: val, TTL: TTL * time.Millisecond}
+			hcItem := hotchan.Item{Val: val, TTL: ttl * time.Millisecond}
 			forSale.Insert(hcItem)
 		}
 	}()
@@ -54,7 +54,7 @@ func StartSelling(newCalls chan types.Call) {
 	var lowestBid types.Bid
 	for {
 		switch state {
-		case Idle:
+		case idle:
 			for {
 				itemForSale = <-forSale.Out
 				// Announce sale on network
@@ -65,12 +65,12 @@ func StartSelling(newCalls chan types.Call) {
 				forSalePubChan <- js
 
 				utils.LogCall(log, moduleName, "Started a new sale", itemForSale.Val.(types.Call))
-				state = WaitingForBids
+				state = waitingForBids
 				break
 			}
-		case WaitingForBids:
+		case waitingForBids:
 			var recvBids []types.Bid
-			timeOut := time.After(BiddingRoundDuration)
+			timeOut := time.After(biddingRoundDuration)
 		L1:
 			for {
 				select {
@@ -89,7 +89,7 @@ func StartSelling(newCalls chan types.Call) {
 					if len(recvBids) == 0 {
 						//Try to sell again
 						forSale.Insert(itemForSale)
-						state = Idle
+						state = idle
 						break L1
 					}
 					lowestBid = getLowestBid(recvBids)
@@ -99,12 +99,12 @@ func StartSelling(newCalls chan types.Call) {
 						panic(fmt.Sprintf("Could not marshal call %s", err.Error()))
 					}
 					soldToPubChan <- js
-					state = WaitingForAck
+					state = waitingForAck
 					break L1
 				}
 			}
-		case WaitingForAck:
-			timeOut := time.After(AckWaitDuration)
+		case waitingForAck:
+			timeOut := time.After(ackWaitDuration)
 		L2:
 			for {
 				select {
@@ -116,12 +116,12 @@ func StartSelling(newCalls chan types.Call) {
 					}
 					if ack.Bid == lowestBid {
 						utils.LogAck(log, moduleName, "Got ack from lowest bidder", ack)
-						state = Idle
+						state = idle
 						break L2
 					}
 				case <-timeOut:
 					forSale.Insert(itemForSale)
-					state = Idle
+					state = idle
 					break L2
 				}
 			}
