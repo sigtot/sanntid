@@ -24,7 +24,7 @@ type PriceCalculator interface {
 	GetPrice(types.Call) int
 }
 
-// StartBuying starts a go-routine that bids on and buys calls.
+// StartBuying starts a buyer that bids on and buys calls.
 // It subscribes to sale propositions and sales.
 // It publishes bids and sale acknowledgements.
 // A PriceCalculator interface is used to get the price on a call.

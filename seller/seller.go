@@ -1,3 +1,7 @@
+/*
+Package seller contains logic for announcing sale propositions,
+running bidding rounds and selling to the lowest bidder.
+*/
 package seller
 
 import (
@@ -26,8 +30,9 @@ const biddingRoundDuration = time.Millisecond * 10
 const ackWaitDuration = time.Millisecond * 10
 const moduleName = "SELLER"
 
-// StartSelling starts the seller.
-// It will attempt to sell calls sent into the newCalls channel on the network.
+// StartSelling starts a seller that sells calls, runs bidding rounds and sells to the lowest bidder.
+// A seller subscribes to bids and sale acknowledgements.
+// A seller publishes sale propositions and sales.
 func StartSelling(newCalls chan types.Call) {
 	state := idle
 
@@ -129,6 +134,7 @@ func StartSelling(newCalls chan types.Call) {
 	}
 }
 
+// GetLowestBid returns the lowest bid from a slice of bids.
 func getLowestBid(bids []types.Bid) types.Bid {
 	lowestBid := bids[0]
 	lowestPrice := bids[0].Price

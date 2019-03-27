@@ -127,7 +127,7 @@ func StartOrderWatcher(callsForSale chan types.Call, db *bolt.DB, quit <-chan in
 				if err != nil {
 					panic(fmt.Sprintf("Could not unmarshal db message %s", err.Error()))
 				}
-				if dbMsg.ElevatorID == elevatorID {
+				if dbMsg.senderID == elevatorID {
 					break // No need to sync with local db
 				}
 				timeBefore := time.Now()

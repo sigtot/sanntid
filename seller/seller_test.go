@@ -93,9 +93,8 @@ func TestSeller(t *testing.T) {
 			fmt.Printf("Got ack %+v\n", ack)
 			if ack.Price == bestPrice {
 				return
-			} else {
-				t.FailNow()
 			}
+			t.FailNow()
 		case <-timeOut:
 			t.Error("Never got an ack. Timed out")
 			t.FailNow()

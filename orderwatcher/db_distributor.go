@@ -16,10 +16,12 @@ import (
 const dbDistributeInterval = 10000
 
 type DbMsg struct {
-	Buf        []byte
-	ElevatorID string
+	Buf      []byte
+	senderID string
 }
 
+// StartDbDistributor starts distributing the database of orders.
+// It compresses the file and publishes it as a DbMsg on the network.
 func StartDbDistributor(db *bolt.DB, dbName string, quit <-chan int) chan int {
 	dbPubChan := publish.StartPublisher(pubsub.DbDiscoveryPort)
 	elevatorID, _ := mac.GetMacAddr()
@@ -30,12 +32,12 @@ func StartDbDistributor(db *bolt.DB, dbName string, quit <-chan int) chan int {
 		for {
 			select {
 			case <-dbDistributeTicker.C:
-				buf, err := copyDb(db, dbName)
+				buf, err := getCompressesCopyDb(db, dbName)
 				if err != nil {
 					panic(err)
 				}
 
-				dbMsg := DbMsg{Buf: buf.Bytes(), ElevatorID: elevatorID}
+				dbMsg := DbMsg{Buf: buf.Bytes(), senderID: elevatorID}
 				dbJson, err := json.Marshal(dbMsg)
 				if err != nil {
 					panic("Could not marshal buffer")
@@ -50,7 +52,8 @@ func StartDbDistributor(db *bolt.DB, dbName string, quit <-chan int) chan int {
 	return quitAck
 }
 
-func copyDb(db *bolt.DB, dbName string) (buf bytes.Buffer, err error) {
+// getCompressesCopyDb returns a compressed buffer copy of the input database.
+func getCompressesCopyDb(db *bolt.DB, dbName string) (buf bytes.Buffer, err error) {
 	err = db.View(func(tx *bolt.Tx) error {
 		f, err := os.Open(dbName)
 		if err != nil {
