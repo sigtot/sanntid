@@ -1,3 +1,7 @@
+/*
+Package elev implements a simple elevator controller that directs the elevator
+to a goal floor and handles arrival at goal floor.
+*/
 package elev
 
 import (
@@ -14,8 +18,8 @@ import (
 // Door open wait time in milliseconds
 const doorOpenWaitTime = 3000
 
-// It's timeout time
-const initTimeoutTime = 3000
+// Init timeout time in milliseconds
+const initTimeout = 3000
 
 const elevServerHost = "localhost"
 
@@ -24,7 +28,7 @@ const numElevFloors = 4
 const moduleName = "ELEV"
 const logString = "%-15s%s"
 
-type Elev struct {
+type elev struct {
 	dir      elevio.MotorDirection
 	moving   bool
 	pos      float64
@@ -32,10 +36,18 @@ type Elev struct {
 	doorOpen bool
 }
 
-func StartElevController(goalArrivals chan<- types.Order, currentGoals <-chan types.Order, floorArrivals <-chan int, elevPort int, quit <-chan int, wg *sync.WaitGroup) *Elev {
+// StartElevController initializes the elevator controller and starts a go-routine that
+// responds to new goals on currentGoals and announces goal arrival at goalArrival.
+func StartElevController(
+	goalArrivals chan<- types.Order,
+	currentGoals <-chan types.Order,
+	floorArrivals <-chan int,
+	elevPort int,
+	quit <-chan int,
+	wg *sync.WaitGroup) *elev {
 	var log = logrus.New()
 
-	elev := Elev{}
+	elev := elev{}
 	elevServerAddr := fmt.Sprintf("%s:%d", elevServerHost, elevPort)
 	err := elev.Init(elevServerAddr, numElevFloors, floorArrivals)
 	if err != nil {
@@ -106,7 +118,7 @@ func StartElevController(goalArrivals chan<- types.Order, currentGoals <-chan ty
 	return &elev
 }
 
-func (elev *Elev) Init(addr string, numFloors int, floorArrivals <-chan int) error {
+func (elev *elev) Init(addr string, numFloors int, floorArrivals <-chan int) error {
 	elevio.Init(addr, numFloors)
 
 	elev.moving = true
@@ -114,7 +126,7 @@ func (elev *Elev) Init(addr string, numFloors int, floorArrivals <-chan int) err
 	elev.dir = elevio.MdDown
 
 	defer elev.stop()
-	timeout := time.After(initTimeoutTime * time.Millisecond)
+	timeout := time.After(initTimeout * time.Millisecond)
 L:
 	for {
 		select {
@@ -145,17 +157,17 @@ func goalDir(goal types.Order, pos float64) (dir elevio.MotorDirection, updateDi
 	}
 }
 
-func (elev *Elev) stop() {
+func (elev *elev) stop() {
 	elev.moving = false
 	elevio.SetMotorDirection(elevio.MdStop)
 }
 
-func (elev *Elev) start() {
+func (elev *elev) start() {
 	elev.moving = true
 	elevio.SetMotorDirection(elev.dir)
 }
 
-func (elev *Elev) setPos(pos float64) {
+func (elev *elev) setPos(pos float64) {
 	elev.pos = pos
 	isWholeNumber := float64(int(elev.pos)) == elev.pos
 	if isWholeNumber {
@@ -163,14 +175,14 @@ func (elev *Elev) setPos(pos float64) {
 	}
 }
 
-func (elev *Elev) atGoal() bool {
+func (elev *elev) atGoal() bool {
 	return int(2*elev.pos) == 2*elev.goal.Floor
 }
 
-func (elev *Elev) GetDir() elevio.MotorDirection {
+func (elev *elev) GetDir() elevio.MotorDirection {
 	return elev.dir
 }
 
-func (elev *Elev) GetPos() float64 {
+func (elev *elev) GetPos() float64 {
 	return elev.pos
 }

@@ -4,6 +4,7 @@ import (
 	"time"
 )
 
+// DelayedCounter holds a count which can be read from the Count channel.
 type DelayedCounter struct {
 	count int
 	Count chan int
@@ -16,6 +17,8 @@ const (
 	stateCounting
 )
 
+// Start starts a delayed counter. After a time interval specified by the delay argument,
+// it will start counting with a period specified by the countInterval argument.
 func (dc *DelayedCounter) Start(delay time.Duration, countInterval time.Duration) {
 	dc.Count = make(chan int)
 	dc.reset = make(chan int)
@@ -45,10 +48,12 @@ func (dc *DelayedCounter) Start(delay time.Duration, countInterval time.Duration
 	}()
 }
 
-func (dc *DelayedCounter) Stop() {
-	dc.stop <- 0
-}
-
+// Reset resets a DelayedCounter such that the count is set to zero and the delay is reset.
 func (dc *DelayedCounter) Reset() {
 	dc.reset <- 0
+}
+
+// Stop turns off a delayedCounter.
+func (dc *DelayedCounter) Stop() {
+	dc.stop <- 0
 }

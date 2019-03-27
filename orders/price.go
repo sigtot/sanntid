@@ -11,6 +11,9 @@ const individualWeight = 1
 const waitWeight = 3
 const travelWeight = 1
 
+// calcPriceFromQueue calculates the cost of newOrder, given the current queue of orders and elevator direction.
+// The trade-off between the cost of delaying the delivery of other orders and the delivery time of newOrder
+// can be tuned using the weights communityWeight and individualWeight.
 func calcPriceFromQueue(newOrder types.Order, orders []types.Order, position float64, dir elevio.MotorDirection) (int, error) {
 	ordersCopy := make([]types.Order, len(orders))
 	copy(ordersCopy, orders)
@@ -36,7 +39,9 @@ func calcPriceFromQueue(newOrder types.Order, orders []types.Order, position flo
 	return int(communityWeight*float64(communityCost) + individualWeight*float64(individualCost) + 0.5), nil
 }
 
-// Should take in sorted and unique orders for correct behaviour
+// calcTotalQueueCost iterates a sorted and unique order slice and calculates the total cost of the trajectory.
+// Should take in sorted and unique orders for correct behaviour.
+// The trade-off between cost of travel and waiting can be tuned using the weights travelWeight and waitWeight.
 func calcTotalQueueCost(orders []types.Order, position float64) int {
 	cost := 0.0
 	for i := 0; i < len(orders); i++ {
@@ -50,6 +55,7 @@ func calcTotalQueueCost(orders []types.Order, position float64) int {
 	return int(cost + 0.5)
 }
 
+// removeDupesSorted removes duplicate orders from a sorted slice of orders.
 func removeDupesSorted(orders []types.Order) (uniques []types.Order) {
 	if len(orders) < 1 {
 		return orders
@@ -64,12 +70,12 @@ func removeDupesSorted(orders []types.Order) (uniques []types.Order) {
 	return uniques
 }
 
-// Equivalent to checking equality of dir, type and floor
+// OrdersEqual checks equality of dir, type and floor
 func OrdersEqual(order1 types.Order, order2 types.Order) bool {
 	return order1.Dir == order2.Dir && order1.Type == order2.Type && order1.Floor == order2.Floor
 }
 
-// Returns index of needle in haystack if it exists, otherwise returns -1.
+// findOrderIndex finds index of needle in haystack if it exists, otherwise returns -1.
 func findOrderIndex(needle types.Order, haystack []types.Order) int {
 	for i, v := range haystack {
 		if OrdersEqual(needle, v) {

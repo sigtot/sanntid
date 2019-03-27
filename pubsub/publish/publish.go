@@ -11,7 +11,7 @@ import (
 	"time"
 )
 
-const TTL = 5 * time.Second
+const ttl = 5 * time.Second
 
 const moduleName = "PUBLISHER"
 const logString = "%-15s%s"
@@ -38,7 +38,7 @@ func StartPublisher(discoveryPort int) chan []byte {
 				subIP := sub.IP
 				numSubsBefore := len(subHotChan.Out)
 				subs := make(chan hotchan.Item, 1024)
-				newSubI := hotchan.Item{Val: subIP, TTL: TTL}
+				newSubI := hotchan.Item{Val: subIP, ttl: ttl}
 				subs <- newSubI
 				for len(subHotChan.Out) > 0 {
 					subI := <-subHotChan.Out
