@@ -1,3 +1,7 @@
+/*
+Package orders contains functions for sorting lists of orders, calculating prices of new orders and
+procedures for keeping track of the order queue and handling goal floor arrivals and new orders.
+*/
 package orders
 
 import (
@@ -14,23 +18,31 @@ import (
 const numFloors = 4
 const topFloor = numFloors - 1
 const bottomFloor = 0
-const moduleName = "ORDER HANDLER"
 
 const counterDelay = 12000
 const tickInterval = 1000
 const deliveryDelayWeight = 1
 
+const moduleName = "ORDER HANDLER"
+
+// OrderHandler contains a unsorted list of all orders this elevator has to deliver. It also has a interface to the
+// elevator controller in order to receive the direction and position of the elevator. Finally it has a
+// delayed counter, which is added to the price calculation to penalize late deliveries. This makes the system
+// robust against motor failure and similar.
 type OrderHandler struct {
 	orders         []types.Order
 	delayedCounter DelayedCounter
 	elev           ElevInterface
 }
 
+// ElevInterface is used by the order handler to get the current position and direction of the elevator.
 type ElevInterface interface {
 	GetDir() elevio.MotorDirection
 	GetPos() float64
 }
 
+// StartOrderHandler start a go-routine that sends the next goal floor on the currentGoals channel,
+// when new orders are received or the elevator arrives at the current goal floor.
 func StartOrderHandler(
 	currentGoals chan types.Order,
 	arrivals chan types.Order,
@@ -98,8 +110,10 @@ func StartOrderHandler(
 	return &oh, newOrders
 }
 
-func (oh *OrderHandler) GetPrice(order types.Call) int {
-	price, err := calcPriceFromQueue(types.Order{Call: order}, oh.orders, oh.elev.GetPos(), oh.elev.GetDir())
+// GetPrice uses calcPriceFromQueue to calculate the price of the call argument, and adds a penalty to order delivery
+// delay using the delayed counter.
+func (oh *OrderHandler) GetPrice(call types.Call) int {
+	price, err := calcPriceFromQueue(types.Order{Call: call}, oh.orders, oh.elev.GetPos(), oh.elev.GetDir())
 	okOrPanic(err)
 	if len(oh.orders) > 0 {
 		count := <-oh.delayedCounter.Count
@@ -108,6 +122,7 @@ func (oh *OrderHandler) GetPrice(order types.Call) int {
 	return price
 }
 
+// getNextGoal finds the next goal floor by sorting the order list and picking out the first element.
 func getNextGoal(orders []types.Order, elev ElevInterface) (types.Order, error) {
 	ordersCopy := make([]types.Order, len(orders))
 	copy(ordersCopy, orders)
