@@ -42,6 +42,7 @@ func StartBuying(priceCalc PriceCalculator, newOrders chan types.Order) {
 		for {
 			select {
 			case callJson := <-forSaleSubChan:
+				// Unmarshal call for sale
 				call := types.Call{}
 				err := json.Unmarshal(callJson, &call)
 				if err != nil {
@@ -51,14 +52,14 @@ func StartBuying(priceCalc PriceCalculator, newOrders chan types.Order) {
 				if call.Type == types.Cab && call.ElevatorID != elevatorID {
 					break // Do not respond to other elevator's cab calls
 				}
-
 				if call.Floor > topFloor || call.Floor < bottomFloor {
 					break // Do not respond to calls outside elevator floor range
 				}
 				if call.Floor == topFloor && call.Dir == types.Up || call.Floor == bottomFloor && call.Dir == types.Down {
-					break
+					break // Do not respond to invalid calls on floor range boundary
 				}
 
+				// Calculate price and bid on call for sale
 				price := priceCalc.GetPrice(call)
 				bid := types.Bid{Call: call, Price: price, ElevatorID: elevatorID}
 
@@ -70,14 +71,15 @@ func StartBuying(priceCalc PriceCalculator, newOrders chan types.Order) {
 
 				utils.LogBid(log, moduleName, "Placed bid on order", bid)
 			case soldToJson := <-soldToSubChan:
+				// Unmarshal sold to signal
 				soldTo := types.SoldTo{}
 				err := json.Unmarshal(soldToJson, &soldTo)
-
 				if err != nil {
 					panic(fmt.Sprintf("Could not unmarshal sold call %s", err.Error()))
 				}
 
 				if soldTo.ElevatorID == elevatorID {
+					// Send acknowledgement and handle order if sold to this bidder
 					ack := types.Ack{Bid: soldTo.Bid}
 					js, err := json.Marshal(ack)
 					if err != nil {
