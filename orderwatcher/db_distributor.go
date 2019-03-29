@@ -15,8 +15,8 @@ import (
 
 const dbDistributeInterval = 10000
 
-type DbMsg struct {
-	Buf      []byte
+type dbMsg struct {
+	buf      []byte
 	senderID string
 }
 
@@ -37,7 +37,7 @@ func StartDbDistributor(db *bolt.DB, dbName string, quit <-chan int) chan int {
 					panic(err)
 				}
 
-				dbMsg := DbMsg{Buf: buf.Bytes(), senderID: elevatorID}
+				dbMsg := dbMsg{buf: buf.Bytes(), senderID: elevatorID}
 				dbJson, err := json.Marshal(dbMsg)
 				if err != nil {
 					panic("Could not marshal buffer")

@@ -1,3 +1,8 @@
+/*
+Package orderwatcher contains the watchdog and state distribution system, and thus handles most of the fault tolerance
+in the elevator system. Orders on the network are stored in a local database,
+which is regularly distributed and synced with the other elevators on the network.
+*/
 package orderwatcher
 
 import (
@@ -37,14 +42,18 @@ const dbCopyName = "orderwatcher_copy.db"
 const dbCopyPerms = 0600
 const dbCopyTimeout = 500
 
-type WatchThis struct {
+type watchThis struct {
 	ElevatorID string
 	Time       time.Time
 	Call       types.Call
 }
 
-// StartOrderWatcher starts the order watcher
-//
+// StartOrderWatcher starts the order watcher, which listens for call sales and order deliveries on the network,
+// and updates a local database that stores all orders.
+// It traverses the database at regular intervals and sends orders that take too long to deliver to the seller.
+// The order watcher also listens for database files sent by the other db distributors
+// and synchronizes them with the local database.
+// An order watcher subscribes to sale acknowledgements, order deliveries and db distribution messages.
 func StartOrderWatcher(callsForSale chan types.Call, db *bolt.DB, quit <-chan int, wg *sync.WaitGroup) {
 	ackSubChan, _ := subscribe.StartSubscriber(pubsub.AckDiscoveryPort, pubsub.AckTopic)
 	orderDeliveredSubChan, _ := subscribe.StartSubscriber(pubsub.OrderDeliveredDiscoveryPort, pubsub.OrderDeliveredTopic)
@@ -61,36 +70,40 @@ func StartOrderWatcher(callsForSale chan types.Call, db *bolt.DB, quit <-chan in
 		for {
 			select {
 			case ackJson := <-ackSubChan:
-				// Unmarshal ack
+				// Unmarshal ack and translate to watchThis
 				ack := types.Ack{}
 				err := json.Unmarshal(ackJson, &ack)
 				if err != nil {
 					panic(fmt.Sprintf("Could not unmarshal ack %s", err.Error()))
 				}
-				wt := WatchThis{ElevatorID: ack.ElevatorID, Time: time.Now(), Call: ack.Call}
+				wt := watchThis{ElevatorID: ack.ElevatorID, Time: time.Now(), Call: ack.Call}
 				wtJson, err := json.Marshal(wt)
 				if err != nil {
-					panic("Could not marshal WatchThis")
+					panic("Could not marshal watchThis")
 				}
 
-				// Save wt in db
+				// Save watchThis in db
 				bName, err := getBucketName(wt)
 				okOrPanic(err)
 				err = writeToDb(db, bName, strconv.Itoa(wt.Call.Floor), wtJson)
 				okOrPanic(err)
 
 			case orderJson := <-orderDeliveredSubChan:
+				// Unmarshal order
 				order := types.Order{}
 				err := json.Unmarshal(orderJson, &order)
 				if err != nil {
 					panic(fmt.Sprintf("Could not unmarshal order %s", err.Error()))
 				}
-				wt := WatchThis{ElevatorID: order.ElevatorID, Time: time.Now(), Call: order.Call}
+
+				// Remove order from database
+				wt := watchThis{ElevatorID: order.ElevatorID, Time: time.Now(), Call: order.Call}
 				bName, err := getBucketName(wt)
 				okOrPanic(err)
 				err = writeToDb(db, bName, strconv.Itoa(wt.Call.Floor), []byte{})
 				okOrPanic(err)
 			case <-dbTraversalTicker.C:
+				// Traverse database and identify orders not delivered in time
 				err := db.Update(func(tx *bolt.Tx) error {
 					return tx.ForEach(func(name []byte, b *bolt.Bucket) error {
 						err := b.ForEach(func(k []byte, v []byte) error {
@@ -122,7 +135,7 @@ func StartOrderWatcher(callsForSale chan types.Call, db *bolt.DB, quit <-chan in
 				okOrPanic(err)
 			case dbMsgJson := <-dbSubChan:
 				// Unmarshal db message
-				dbMsg := DbMsg{}
+				dbMsg := dbMsg{}
 				err := json.Unmarshal(dbMsgJson, &dbMsg)
 				if err != nil {
 					panic(fmt.Sprintf("Could not unmarshal db message %s", err.Error()))
@@ -133,7 +146,7 @@ func StartOrderWatcher(callsForSale chan types.Call, db *bolt.DB, quit <-chan in
 				timeBefore := time.Now()
 				// Uncompress db file
 				var buf bytes.Buffer
-				buf.Write(dbMsg.Buf)
+				buf.Write(dbMsg.buf)
 				zr, err := gzip.NewReader(&buf)
 				okOrPanic(err)
 
@@ -188,7 +201,7 @@ func StartOrderWatcher(callsForSale chan types.Call, db *bolt.DB, quit <-chan in
 }
 
 func writeToDb(db *bolt.DB, bName string, key string, value []byte) error {
-	if err := db.Update(func(tx *bolt.Tx) error { // Close db after operations? Also these should maybe be merges to one transaction?
+	if err := db.Update(func(tx *bolt.Tx) error {
 		_, err := tx.CreateBucketIfNotExists([]byte(bName))
 		return err
 	}); err != nil {
@@ -200,7 +213,7 @@ func writeToDb(db *bolt.DB, bName string, key string, value []byte) error {
 	})
 }
 
-func getBucketName(wt WatchThis) (name string, err error) {
+func getBucketName(wt watchThis) (name string, err error) {
 	if wt.Call.Type == types.Hall {
 		if wt.Call.Dir == types.Up {
 			name = hallUpBucketName
@@ -216,8 +229,8 @@ func getBucketName(wt WatchThis) (name string, err error) {
 	}
 	return name, err
 }
-func unmarshalWatchThis(wtJson []byte) (*WatchThis, error) {
-	wt := WatchThis{}
+func unmarshalWatchThis(wtJson []byte) (*watchThis, error) {
+	wt := watchThis{}
 	err := json.Unmarshal(wtJson, &wt)
 	return &wt, err
 }
@@ -245,7 +258,7 @@ func getTTD() time.Duration {
 	return time.Duration(baseTTD+(rand.Intn(randTTDOffset)-randTTDOffset/2)) * time.Millisecond
 }
 
-func logWatchThis(log *logrus.Logger, moduleName string, info string, wt WatchThis) {
+func logWatchThis(log *logrus.Logger, moduleName string, info string, wt watchThis) {
 	log.WithFields(logrus.Fields{
 		"type":  wt.Call.Type,
 		"floor": wt.Call.Floor,

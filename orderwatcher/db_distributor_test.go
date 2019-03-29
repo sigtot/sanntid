@@ -35,7 +35,7 @@ func TestStartDbDistributor(t *testing.T) {
 	StartDbDistributor(db, testDbName, quit)
 
 	dbMsgJson := <-dbSubChan
-	dbMsg := DbMsg{}
+	dbMsg := dbMsg{}
 	err = json.Unmarshal(dbMsgJson, &dbMsg)
 	if err != nil {
 		panic(fmt.Sprintf("Could not unmarshal db message %s", err.Error()))
@@ -44,7 +44,7 @@ func TestStartDbDistributor(t *testing.T) {
 	fmt.Printf("%+v\n", dbMsg)
 
 	var buf bytes.Buffer
-	buf.Write(dbMsg.Buf)
+	buf.Write(dbMsg.buf)
 	zr, err := gzip.NewReader(&buf)
 	if err != nil {
 		panic(err)
