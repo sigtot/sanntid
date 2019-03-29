@@ -30,9 +30,9 @@ const logString = "%-15s%s"
 
 type elev struct {
 	dir      elevio.MotorDirection
-	moving   bool
 	pos      float64
 	goal     types.Order
+	moving   bool // TODO: remove this as it is redundant i think
 	doorOpen bool
 }
 
@@ -68,22 +68,23 @@ func StartElevController(
 		for {
 			select {
 			case elev.goal = <-currentGoals:
+				// Set direction to deliver new goal order
 				if newGoalDir, updateDir, err := goalDir(elev.goal, elev.pos); updateDir == true && err == nil {
 					elev.dir = newGoalDir
 				} else if err != nil {
 					panic(err)
 				}
-				// TODO: Think hard about this
 				if elev.atGoal() {
 					atGoal <- 1
 				} else if !elev.doorOpen {
 					elev.start()
 				}
 			case <-atGoal:
+				// Stop elevator, open doors and announce arrival
 				elev.stop()
 				elev.doorOpen = true
-				startAgain = time.After(doorOpenWaitTime * time.Millisecond)
 				elevio.SetDoorOpenLamp(true)
+				startAgain = time.After(doorOpenWaitTime * time.Millisecond)
 				goalArrivals <- elev.goal
 				utils.Log(log, moduleName, "Opened doors")
 			case floorArrival := <-floorArrivals:
@@ -101,6 +102,7 @@ func StartElevController(
 					}
 				}
 			case <-startAgain:
+				// Close doors and start elevator again
 				elevio.SetDoorOpenLamp(false)
 				elev.doorOpen = false
 				if !elev.atGoal() {
@@ -118,6 +120,7 @@ func StartElevController(
 	return &elev
 }
 
+// Init initializes elevio and moves the elevator down to a floor in order to determine the position
 func (elev *elev) Init(addr string, numFloors int, floorArrivals <-chan int) error {
 	elevio.Init(addr, numFloors)
 
@@ -141,6 +144,7 @@ L:
 	return nil
 }
 
+// goalDir calculates the new goal direction from the goal order argument and the current position
 func goalDir(goal types.Order, pos float64) (dir elevio.MotorDirection, updateDir bool, err error) {
 	if float64(goal.Floor) > pos {
 		return elevio.MdUp, true, nil

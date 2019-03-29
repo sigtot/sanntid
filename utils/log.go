@@ -5,6 +5,7 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+// log string is used to format fixed width module print
 const logString = "%-15s%s"
 
 // LogBid prints a bid to the terminal

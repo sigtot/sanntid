@@ -15,15 +15,16 @@ const travelWeight = 1
 // The trade-off between the cost of delaying the delivery of other orders and the delivery time of newOrder
 // can be tuned using the weights communityWeight and individualWeight.
 func calcPriceFromQueue(newOrder types.Order, orders []types.Order, position float64, dir elevio.MotorDirection) (int, error) {
+	// Create sorted, unique list of current orders
 	ordersCopy := make([]types.Order, len(orders))
 	copy(ordersCopy, orders)
-
 	sortedOrders, err := sortOrders(ordersCopy, position, dir)
 	if err != nil {
 		return -1, err
 	}
 	sortedOrders = removeDupesSorted(sortedOrders)
 
+	// Create sorted, unique list of orders with new order included
 	newSortedOrders := make([]types.Order, len(sortedOrders))
 	copy(newSortedOrders, sortedOrders)
 	newSortedOrders, err = sortOrders(append(newSortedOrders, newOrder), position, dir)
@@ -32,6 +33,7 @@ func calcPriceFromQueue(newOrder types.Order, orders []types.Order, position flo
 	}
 	newSortedOrders = removeDupesSorted(newSortedOrders)
 
+	// Calculate price of adding new order to current order queue
 	newOrderIndex := findOrderIndex(newOrder, newSortedOrders)
 	numOrdersAfter := len(newSortedOrders) - (newOrderIndex + 1)
 	communityCost := (calcTotalQueueCost(newSortedOrders, position) - calcTotalQueueCost(sortedOrders, position)) * numOrdersAfter

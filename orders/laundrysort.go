@@ -11,20 +11,23 @@ func sortOrders(orders []types.Order, position float64, dir elevio.MotorDirectio
 	if dir == elevio.MdStop {
 		panic("sortOrders should never be called with a elevio.MdStop direction")
 	}
-	// Iterate over elevator cycle
+	// Iterate over one complete elevator cycle
 	floor := roundPositionInDirection(position, dir)
 	startFloor := floor
 	startDir := dir
 	homeHitCount := 0
 	for {
 		if floor == startFloor && dir == startDir {
+			// Hit starting position
 			homeHitCount++
 		}
 		if homeHitCount >= 2 {
+			// One complete elevator cycle is completed
 			break
 		}
 
 		for i := 0; i < len(orders); i++ {
+			// Find all orders which should be delivered in this iteration of the elevator cycle
 			order := orders[i]
 			if order.Floor == floor {
 				if order.Type == types.Cab {
@@ -43,6 +46,7 @@ func sortOrders(orders []types.Order, position float64, dir elevio.MotorDirectio
 			}
 		}
 
+		// Move to next iterate in elevator cycle. Reverse direction if at floor bounds.
 		if floor >= topFloor && dir == elevio.MdUp {
 			dir = elevio.MdDown
 		} else if floor <= bottomFloor && dir == elevio.MdDown {
@@ -52,6 +56,7 @@ func sortOrders(orders []types.Order, position float64, dir elevio.MotorDirectio
 		}
 	}
 
+	// TODO: someone who knows what this does should comment it
 	i := 0
 	for j := i + 1; j <= len(sorted); j++ {
 		if j == len(sorted) || sorted[j].Floor != sorted[j-1].Floor {

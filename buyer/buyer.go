@@ -20,6 +20,8 @@ const topFloor = numFloors - 1
 const bottomFloor = 0
 const moduleName = "BUYER"
 
+// PriceCalculator is the interface that wraps the GetPrice method.
+// It is needed by the buyer to bid on calls for sale.
 type PriceCalculator interface {
 	GetPrice(types.Call) int
 }
@@ -50,13 +52,16 @@ func StartBuying(priceCalc PriceCalculator, newOrders chan types.Order) {
 				}
 
 				if call.Type == types.Cab && call.ElevatorID != elevatorID {
-					break // Do not respond to other elevator's cab calls
+					// Do not respond to other elevator's cab calls
+					break
 				}
 				if call.Floor > topFloor || call.Floor < bottomFloor {
-					break // Do not respond to calls outside elevator floor range
+					// Do not respond to calls outside elevator floor range
+					break
 				}
 				if call.Floor == topFloor && call.Dir == types.Up || call.Floor == bottomFloor && call.Dir == types.Down {
-					break // Do not respond to invalid calls on floor range boundary
+					// Do not respond to invalid calls on floor range boundary
+					break
 				}
 
 				// Calculate price and bid on call for sale
