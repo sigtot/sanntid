@@ -38,7 +38,7 @@ func StartPublisher(discoveryPort int) chan []byte {
 				subIP := sub.IP
 				numSubsBefore := len(subHotChan.Out)
 				subs := make(chan hotchan.Item, 1024)
-				newSubI := hotchan.Item{Val: subIP, ttl: ttl}
+				newSubI := hotchan.Item{Val: subIP, TTL: ttl}
 				subs <- newSubI
 				for len(subHotChan.Out) > 0 {
 					subI := <-subHotChan.Out
@@ -105,7 +105,7 @@ func publish(addr string, body []byte) {
 }
 
 // Publish thingToPublish to all subscribers in subHotChan.
-// Must not be run concurrently.
+// Must not be run concurrently for the same publisher.
 func fanOutPublish(thingToPublish []byte, subHotChan hotchan.HotChan) {
 	subs := make(chan hotchan.Item, 1024)
 	for len(subHotChan.Out) > 0 {

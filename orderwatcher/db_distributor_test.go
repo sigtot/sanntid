@@ -44,7 +44,7 @@ func TestStartDbDistributor(t *testing.T) {
 	fmt.Printf("%+v\n", dbMsg)
 
 	var buf bytes.Buffer
-	buf.Write(dbMsg.buf)
+	buf.Write(dbMsg.Buf)
 	zr, err := gzip.NewReader(&buf)
 	if err != nil {
 		panic(err)

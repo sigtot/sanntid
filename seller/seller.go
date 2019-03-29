@@ -46,8 +46,6 @@ func StartSelling(newCalls chan types.Call) {
 	forSale := hotchan.HotChan{}
 	forSale.Start()
 
-	defer forSale.Stop()
-
 	go func() {
 		// Add new calls to queue of orders to sell
 		for {
@@ -57,6 +55,7 @@ func StartSelling(newCalls chan types.Call) {
 		}
 	}()
 	go func() {
+		defer forSale.Stop()
 		var itemForSale hotchan.Item
 		var lowestBid types.Bid
 		for {
@@ -95,7 +94,7 @@ func StartSelling(newCalls chan types.Call) {
 						utils.LogBid(log, moduleName, "Received bid", bid)
 					case <-timeOut:
 						if len(recvBids) == 0 {
-							//Try to sell again
+							// Try to sell again
 							forSale.Insert(itemForSale)
 							state = idle
 							break L1

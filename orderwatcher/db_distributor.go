@@ -16,15 +16,18 @@ import (
 const dbDistributeInterval = 10000
 
 type dbMsg struct {
-	buf      []byte
-	senderID string
+	Buf      []byte
+	SenderID string
 }
 
 // StartDbDistributor starts distributing the database of orders.
 // It compresses the file and publishes it as a DbMsg on the network.
 func StartDbDistributor(db *bolt.DB, dbName string, quit <-chan int) chan int {
 	dbPubChan := publish.StartPublisher(pubsub.DbDiscoveryPort)
-	elevatorID, _ := mac.GetMacAddr()
+	elevatorID, err := mac.GetMacAddr()
+	if err != nil {
+		panic(err)
+	}
 	quitAck := make(chan int)
 
 	go func() {
@@ -37,7 +40,7 @@ func StartDbDistributor(db *bolt.DB, dbName string, quit <-chan int) chan int {
 					panic(err)
 				}
 
-				dbMsg := dbMsg{buf: buf.Bytes(), senderID: elevatorID}
+				dbMsg := dbMsg{Buf: buf.Bytes(), SenderID: elevatorID}
 				dbJson, err := json.Marshal(dbMsg)
 				if err != nil {
 					panic("Could not marshal buffer")

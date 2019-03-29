@@ -1,0 +1,11 @@
+version: "3"
+services:
+    display:
+        container_name: display
+        build: ./display
+        depends_on:
+          - elev
+    elev:
+        build: .
+        volumes:
+          - .:/root/go/src/github.com/sigtot/sanntid

@@ -1,0 +1,6 @@
+FROM golang:1.11-alpine
+RUN ["apk", "update"]
+RUN ["apk", "add", "git"]
+RUN ["go", "get", "github.com/sirupsen/logrus"]
+RUN ["go", "get", "go.etcd.io/bbolt"]
+RUN ["go", "get", "github.com/sigtot/elevio"]
