@@ -25,8 +25,8 @@ type PriceCalculator interface {
 }
 
 // StartBuying starts a buyer that bids on and buys calls.
-// It subscribes to sale propositions and sales.
-// It publishes bids and sale acknowledgements.
+// A buyer subscribes to sale propositions and sales.
+// A buyer publishes bids and sale acknowledgements.
 // A PriceCalculator interface is used to get the price on a call.
 func StartBuying(priceCalc PriceCalculator, newOrders chan types.Order) {
 	bidPubChan := publish.StartPublisher(pubsub.BidDiscoveryPort)

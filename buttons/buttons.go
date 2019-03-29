@@ -1,3 +1,6 @@
+/*
+Package buttons contains logic for listening to new calls, translating them and sending them to a seller.
+*/
 package buttons
 
 import (
@@ -6,6 +9,9 @@ import (
 	"github.com/sigtot/sanntid/types"
 )
 
+// StartButtonHandler starts a go-routine that listens for button events on the buttonEvents channel,
+// and translates the received event to a call type and sends it on the callsForSale channel, which is then received
+// by a seller.
 func StartButtonHandler(buttonEvents chan elevio.ButtonEvent, callsForSale chan types.Call) {
 	ID, err := mac.GetMacAddr()
 	if err != nil {

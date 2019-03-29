@@ -1,3 +1,7 @@
+/*
+Package indicators contains procedures for listening for events on the network and passively updating the
+order indicators accordingly.
+*/
 package indicators
 
 import (
@@ -18,6 +22,9 @@ const topFloor = numFloors - 1
 const bottomFloor = 0
 const moduleName = "ORDER IND"
 
+// StartIndicatorHandler starts a go-routine that initializes the indicators, and listens for call sales and
+// order deliveries on the network, updating the order indicators accordingly.
+// An indicator handler subscribes to sale acknowledgements and order deliveries.
 func StartIndicatorHandler(quit <-chan int, wg *sync.WaitGroup) {
 	ackSubChan, _ := subscribe.StartSubscriber(pubsub.AckDiscoveryPort, pubsub.AckTopic)
 	orderDeliveredSubChan, _ := subscribe.StartSubscriber(pubsub.OrderDeliveredDiscoveryPort, pubsub.OrderDeliveredTopic)
@@ -65,18 +72,19 @@ func StartIndicatorHandler(quit <-chan int, wg *sync.WaitGroup) {
 	}()
 }
 
+// getBtnType translates a call type and a call direction to an elevio button type.
 func getBtnType(callType types.CallType, dir types.Direction) elevio.ButtonType {
 	if callType == types.Hall {
 		if dir == types.Up {
 			return elevio.BtnHallUp
-		} else {
-			return elevio.BtnHallDown
 		}
+		return elevio.BtnHallDown
 	} else {
 		return elevio.BtnCab
 	}
 }
 
+// allOff turns off all order indicators.
 func allOff() {
 	for i := bottomFloor; i <= topFloor; i++ {
 		elevio.SetButtonLamp(elevio.BtnCab, i, false)

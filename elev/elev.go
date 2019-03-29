@@ -149,9 +149,8 @@ func goalDir(goal types.Order, pos float64) (dir elevio.MotorDirection, updateDi
 	} else if goal.Type == types.Hall {
 		if dir, err := utils.OrderDir2MDDir(goal.Dir); err == nil {
 			return dir, true, nil
-		} else {
-			return dir, false, err
 		}
+		return dir, false, err
 	} else {
 		return elevio.MdDown, false, nil
 	}
