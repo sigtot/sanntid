@@ -151,9 +151,8 @@ func goalDir(goal types.Order, pos float64) (dir elevio.MotorDirection, updateDi
 			return dir, true, nil
 		}
 		return dir, false, err
-	} else {
-		return elevio.MdDown, false, nil
 	}
+	return elevio.MdDown, false, nil
 }
 
 func (elev *elev) stop() {

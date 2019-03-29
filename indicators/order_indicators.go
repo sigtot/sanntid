@@ -79,9 +79,8 @@ func getBtnType(callType types.CallType, dir types.Direction) elevio.ButtonType 
 			return elevio.BtnHallUp
 		}
 		return elevio.BtnHallDown
-	} else {
-		return elevio.BtnCab
 	}
+	return elevio.BtnCab
 }
 
 // allOff turns off all order indicators.
