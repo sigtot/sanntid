@@ -56,87 +56,89 @@ func StartSelling(newCalls chan types.Call) {
 			forSale.Insert(hcItem)
 		}
 	}()
-	var itemForSale hotchan.Item
-	var lowestBid types.Bid
-	for {
-		switch state {
-		case idle:
-			for {
-				// Marshal and announce call for sale on network
-				itemForSale = <-forSale.Out
-				js, err := json.Marshal(itemForSale.Val)
-				if err != nil {
-					panic(fmt.Sprintf("Could not marshal call %s", err.Error()))
-				}
-				forSalePubChan <- js
-
-				utils.LogCall(log, moduleName, "Started a new sale", itemForSale.Val.(types.Call))
-				state = waitingForBids
-				break
-			}
-		case waitingForBids:
-			var recvBids []types.Bid
-			timeOut := time.After(biddingRoundDuration)
-		L1:
-			for {
-				select {
-				case bidJson := <-bidSubChan:
-					// Unmarshal and add bid to list of received bids
-					bid := types.Bid{}
-					err := json.Unmarshal(bidJson, &bid)
-					if err != nil {
-						panic(fmt.Sprintf("Could not unmarshal bid %s", err.Error()))
-					}
-					if bid.Call == itemForSale.Val {
-						recvBids = append(recvBids, bid)
-					}
-
-					utils.LogBid(log, moduleName, "Received bid", bid)
-				case <-timeOut:
-					if len(recvBids) == 0 {
-						//Try to sell again
-						forSale.Insert(itemForSale)
-						state = idle
-						break L1
-					}
-
-					// Get lowest bid and announce bidding round winner
-					lowestBid = getLowestBid(recvBids)
-					js, err := json.Marshal(lowestBid)
+	go func() {
+		var itemForSale hotchan.Item
+		var lowestBid types.Bid
+		for {
+			switch state {
+			case idle:
+				for {
+					// Marshal and announce call for sale on network
+					itemForSale = <-forSale.Out
+					js, err := json.Marshal(itemForSale.Val)
 					if err != nil {
 						panic(fmt.Sprintf("Could not marshal call %s", err.Error()))
 					}
-					soldToPubChan <- js
-					state = waitingForAck
-					break L1
+					forSalePubChan <- js
+
+					utils.LogCall(log, moduleName, "Started a new sale", itemForSale.Val.(types.Call))
+					state = waitingForBids
+					break
 				}
-			}
-		case waitingForAck:
-			timeOut := time.After(ackWaitDuration)
-		L2:
-			for {
-				select {
-				case ackJson := <-ackSubChan:
-					// Unmarshal and verify received acknowledgement
-					ack := types.Ack{}
-					err := json.Unmarshal(ackJson, &ack)
-					if err != nil {
-						panic(fmt.Sprintf("Could not unmarshal ack %s", err.Error()))
+			case waitingForBids:
+				var recvBids []types.Bid
+				timeOut := time.After(biddingRoundDuration)
+			L1:
+				for {
+					select {
+					case bidJson := <-bidSubChan:
+						// Unmarshal and add bid to list of received bids
+						bid := types.Bid{}
+						err := json.Unmarshal(bidJson, &bid)
+						if err != nil {
+							panic(fmt.Sprintf("Could not unmarshal bid %s", err.Error()))
+						}
+						if bid.Call == itemForSale.Val {
+							recvBids = append(recvBids, bid)
+						}
+
+						utils.LogBid(log, moduleName, "Received bid", bid)
+					case <-timeOut:
+						if len(recvBids) == 0 {
+							//Try to sell again
+							forSale.Insert(itemForSale)
+							state = idle
+							break L1
+						}
+
+						// Get lowest bid and announce bidding round winner
+						lowestBid = getLowestBid(recvBids)
+						js, err := json.Marshal(lowestBid)
+						if err != nil {
+							panic(fmt.Sprintf("Could not marshal call %s", err.Error()))
+						}
+						soldToPubChan <- js
+						state = waitingForAck
+						break L1
 					}
-					if ack.Bid == lowestBid {
-						utils.LogAck(log, moduleName, "Got ack from lowest bidder", ack)
+				}
+			case waitingForAck:
+				timeOut := time.After(ackWaitDuration)
+			L2:
+				for {
+					select {
+					case ackJson := <-ackSubChan:
+						// Unmarshal and verify received acknowledgement
+						ack := types.Ack{}
+						err := json.Unmarshal(ackJson, &ack)
+						if err != nil {
+							panic(fmt.Sprintf("Could not unmarshal ack %s", err.Error()))
+						}
+						if ack.Bid == lowestBid {
+							utils.LogAck(log, moduleName, "Got ack from lowest bidder", ack)
+							state = idle
+							break L2
+						}
+					case <-timeOut:
+						// Resell if no acknowledgement received
+						forSale.Insert(itemForSale)
 						state = idle
 						break L2
 					}
-				case <-timeOut:
-					// Resell if no acknowledgement received
-					forSale.Insert(itemForSale)
-					state = idle
-					break L2
 				}
 			}
 		}
-	}
+	}()
 }
 
 // GetLowestBid returns the lowest bid from a slice of bids.

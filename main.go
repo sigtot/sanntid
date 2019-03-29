@@ -32,6 +32,7 @@ const defaultElevPort = 15657
 func main() {
 	rand.Seed(time.Now().UnixNano())
 
+	// Read elevator server port flag
 	var elevPort = flag.Int("port", defaultElevPort, "port for connecting to the elevator server")
 	flag.Parse()
 
@@ -59,7 +60,7 @@ func main() {
 
 	buyer.StartBuying(oh, newOrders)
 
-	go seller.StartSelling(callsForSale) //Go this
+	seller.StartSelling(callsForSale)
 
 	orderWatcherDb, err := bolt.Open(dbName, dbPerms, &bolt.Options{Timeout: dbTimeout * time.Millisecond})
 	if err != nil {
