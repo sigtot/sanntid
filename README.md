@@ -5,7 +5,7 @@
 
 > Elevator Project for TTK4145 Real-time Programming
 
-![module_overview](https://imgur.com/a/rlWzu7y)
+![module_overview](https://i.imgur.com/q8aMH2N.png)
 
 ## Design
 ### Major Challanges
