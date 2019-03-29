@@ -5,6 +5,8 @@
 
 > Elevator Project for TTK4145 Real-time Programming
 
+![module_overview](https://imgur.com/a/rlWzu7y)
+
 ## Design
 ### Major Challanges
 The elevator nodes might suffer from power loss at any time. Furthermore, the nodes communicate over unreliable network, such that some nodes may be unavailable to the rest of the network.
