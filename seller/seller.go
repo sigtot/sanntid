@@ -49,6 +49,7 @@ func StartSelling(newCalls chan types.Call) {
 	defer forSale.Stop()
 
 	go func() {
+		// Add new calls to queue of orders to sell
 		for {
 			val := <-newCalls
 			hcItem := hotchan.Item{Val: val, TTL: ttl * time.Millisecond}
@@ -61,8 +62,8 @@ func StartSelling(newCalls chan types.Call) {
 		switch state {
 		case idle:
 			for {
+				// Marshal and announce call for sale on network
 				itemForSale = <-forSale.Out
-				// Announce sale on network
 				js, err := json.Marshal(itemForSale.Val)
 				if err != nil {
 					panic(fmt.Sprintf("Could not marshal call %s", err.Error()))
@@ -80,6 +81,7 @@ func StartSelling(newCalls chan types.Call) {
 			for {
 				select {
 				case bidJson := <-bidSubChan:
+					// Unmarshal and add bid to list of received bids
 					bid := types.Bid{}
 					err := json.Unmarshal(bidJson, &bid)
 					if err != nil {
@@ -97,8 +99,9 @@ func StartSelling(newCalls chan types.Call) {
 						state = idle
 						break L1
 					}
-					lowestBid = getLowestBid(recvBids)
 
+					// Get lowest bid and announce bidding round winner
+					lowestBid = getLowestBid(recvBids)
 					js, err := json.Marshal(lowestBid)
 					if err != nil {
 						panic(fmt.Sprintf("Could not marshal call %s", err.Error()))
@@ -114,6 +117,7 @@ func StartSelling(newCalls chan types.Call) {
 			for {
 				select {
 				case ackJson := <-ackSubChan:
+					// Unmarshal and verify received acknowledgement
 					ack := types.Ack{}
 					err := json.Unmarshal(ackJson, &ack)
 					if err != nil {
@@ -125,6 +129,7 @@ func StartSelling(newCalls chan types.Call) {
 						break L2
 					}
 				case <-timeOut:
+					// Resell if no acknowledgement received
 					forSale.Insert(itemForSale)
 					state = idle
 					break L2

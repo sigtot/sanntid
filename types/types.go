@@ -1,9 +1,8 @@
 package types
 
-type Direction int
-type CallType int
-
 // Direction is the direction of the call.
+type Direction int
+
 const (
 	InvalidDir Direction = iota - 1
 	Down
@@ -11,6 +10,8 @@ const (
 )
 
 // CallType is the type of the call, i.e a hall call or a cab call.
+type CallType int
+
 const (
 	Cab CallType = iota
 	Hall
