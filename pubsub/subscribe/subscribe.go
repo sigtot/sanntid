@@ -1,3 +1,7 @@
+/*
+Package subscribe contains functionality for sending heartbeat signals,
+and setting up http-servers for communications between nodes.
+*/
 package subscribe
 
 import (
@@ -13,6 +17,8 @@ import (
 
 const aliveSignalInterval = 300
 
+// findAvailPort searches for an available port for the tcp connection to use.
+// The ports are randomly selected in a range fro port 10000 to 50000.
 func findAvailPort() (port int) {
 	for {
 		port = rand.Intn(40000) + 10000
@@ -36,13 +42,13 @@ func findAvailPort() (port int) {
 // StartSubscriber starts a subscriber with a given discoveryPort and publishPort.
 // Received items are made available in the returned channel.
 // The returned httpPort is the port of the subscriber's http server
-func StartSubscriber(discoveryPort int, topic string) (receivedBufs chan []byte, httpPort int) {
-	receivedBufs = make(chan []byte, 1024)
+func StartSubscriber(discoveryPort int, topic string) (receivedBuffs chan []byte, httpPort int) {
+	receivedBuffs = make(chan []byte, 1024)
 	httpPort = findAvailPort()
 	go func() {
 		mux := http.NewServeMux()
 		mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-			subHandler(w, r, receivedBufs)
+			subHandler(w, r, receivedBuffs)
 		})
 		if err := http.ListenAndServe(fmt.Sprintf(":%d", httpPort), mux); err != nil {
 			panic(err)
@@ -50,20 +56,24 @@ func StartSubscriber(discoveryPort int, topic string) (receivedBufs chan []byte,
 	}()
 	time.Sleep(500 * time.Millisecond) // Wait for server to start
 	go sendAliveSignal(discoveryPort, httpPort, topic)
-	return receivedBufs, httpPort
+	return receivedBuffs, httpPort
 }
 
-func subHandler(w http.ResponseWriter, r *http.Request, receivedBufs chan []byte) {
+// subHandler reads the http-requests, checks for errors,
+// and passes the body of the requests to the receiver channel.
+func subHandler(w http.ResponseWriter, r *http.Request, receivedBuffs chan []byte) {
 	buf, err := ioutil.ReadAll(r.Body)
 	if err != nil {
 		fmt.Printf("Could not read request body: %s", err.Error())
 		http.Error(w, "500 internal server error", http.StatusInternalServerError)
 	}
 
-	receivedBufs <- buf
+	receivedBuffs <- buf
 	w.WriteHeader(http.StatusOK)
 }
 
+// sendAliveSignal sends heartbeat signals on the subnet with a predetermined port.
+// The port corresponds to the topic of the subscriber.
 func sendAliveSignal(discoveryPort int, publishPort int, topic string) {
 	sAddr, err := net.ResolveUDPAddr("udp", fmt.Sprintf("255.255.255.255:%d", discoveryPort))
 	okOrPanic(err)
