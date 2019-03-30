@@ -1,3 +1,6 @@
+/*
+Package publish listens for subscribers, and items to be published will be posted to all active subscribers.
+*/
 package publish
 
 import (
@@ -60,6 +63,8 @@ func StartPublisher(discoveryPort int) chan []byte {
 	return thingsToPublish
 }
 
+// listenForSubscribers listens for heartbeat signals for subscribers, on a designated discovery-port.
+// The discovery port are preassigned to a topic. All active subscribers are passed to the discoveredSubs channel.
 func listenForSubscribers(discoveryPort int, discoveredSubs chan subscriber) {
 	lAddr, err := net.ResolveUDPAddr("udp", fmt.Sprintf(":%d", discoveryPort))
 	okOrPanic(err)
@@ -81,12 +86,7 @@ func listenForSubscribers(discoveryPort int, discoveredSubs chan subscriber) {
 	}
 }
 
-func okOrPanic(err error) {
-	if err != nil {
-		panic(err)
-	}
-}
-
+// publish posts the body of a messages to the specified address.
 func publish(addr string, body []byte) {
 	resp, err := http.Post(fmt.Sprintf("http://%s", addr), "application/json", bytes.NewBuffer(body))
 	if err != nil {
@@ -123,4 +123,10 @@ func logNewSub(log *logrus.Logger, moduleName string, info string, sub subscribe
 		"IP":    sub.IP,
 		"topic": sub.Topic,
 	}).Infof(logString, moduleName, info)
+}
+
+func okOrPanic(err error) {
+	if err != nil {
+		panic(err)
+	}
 }
