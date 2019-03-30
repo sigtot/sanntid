@@ -1,3 +1,6 @@
+/*
+Package mac contains the functionality for finding the eno1, eth1 or eth0 mac-addresses on linux-ubuntu machines.
+*/
 package mac
 
 import (
