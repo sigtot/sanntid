@@ -5,6 +5,8 @@
 
 > Elevator Project for TTK4145 Real-time Programming
 
+![simulator](/elev.gif)
+
 ![module_overview](https://i.imgur.com/q8aMH2N.png)
 
 ## Design
