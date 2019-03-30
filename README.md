@@ -9,6 +9,26 @@
 
 ![module_overview](https://i.imgur.com/q8aMH2N.png)
 
+## Imported packages
+### elevio package
+The elevator driver used in the project was provided by the course instructors.
+As we were not pleased with some of the implementation done in the driver, the directory was forked, 
+and made some changes to. The original elevator driver can be found [here](https://github.com/TTK4145/driver-go).
+
+### bbolt
+Bolt is the database used by the order watchers to store not yet delivered calls.
+The package used in this project is the bbolt package by etcd, which can be found [here](https://github.com/etcd-io/bbolt)
+
+### logrus
+Logging events in the system is done with the logrus package.
+The package can be found [here](https://github.com/Sirupsen/logrus)
+
+### Go standard library
+A fair few of the packages from the Go standard library are used in this project.
+For specific packages see the imports in the files. These packages are used for a lot of different tasks,
+from io and os related, to encoding and compressing. For the network related parts of the project the net package 
+and net/http package are used.
+
 ## Design
 ### Major Challanges
 The elevator nodes might suffer from power loss at any time. Furthermore, the nodes communicate over unreliable network, such that some nodes may be unavailable to the rest of the network.
@@ -18,7 +38,7 @@ We want the elevators to agree on which one of them should serve a given order. 
 
 A major method for obtaining distributed consensus is [PAXOS](https://en.wikipedia.org/wiki/Paxos_(computer_science)). 
 
-However, a modern, simpler algorithm, which is employed in (etcd)[https://github.com/etcd-io/etcd] among other places will probably be easier to use. This algorithm is called (raft)[https://raft.github.io/]. It works by holding _elections_ and electing a _leader_, which then decides what to write to the other nodes. The leader must send out consecutive _heartbeat_ signals to notify the nodes that it's alive. If one of the nodes doesn't hear from the leader in a long time, it will trigger a reelection and likely take the leader's place. 
+However, a modern, simpler algorithm, which is employed in [etcd](https://github.com/etcd-io/etcd) among other places will probably be easier to use. This algorithm is called [raft](https://raft.github.io/). It works by holding _elections_ and electing a _leader_, which then decides what to write to the other nodes. The leader must send out consecutive _heartbeat_ signals to notify the nodes that it's alive. If one of the nodes doesn't hear from the leader in a long time, it will trigger a reelection and likely take the leader's place. 
 
 More about [state machine replication](https://en.wikipedia.org/wiki/State_machine_replication)
 
