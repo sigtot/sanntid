@@ -109,8 +109,8 @@ func StartOrderHandler(
 	return &oh, newOrders
 }
 
-// GetPrice uses calcPriceFromQueue to calculate the price of the call argument, and adds a penalty to order delivery
-// delay using the delayed counter.
+// GetPrice calculates the price of the given call from the current elevator state, its queue and any accumulated delay
+// penalty based on the time elapsed since the last delivery
 func (oh *OrderHandler) GetPrice(call types.Call) int {
 	price, err := calcPriceFromQueue(types.Order{Call: call}, oh.orders, oh.elev.GetPos(), oh.elev.GetDir())
 	utils.OkOrPanic(err)
