@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"github.com/sigtot/sanntid/mac"
 	"github.com/sigtot/sanntid/pubsub"
-	"github.com/sigtot/sanntid/pubsub/publish"
 	"github.com/sigtot/sanntid/types"
 	"testing"
 	"time"
@@ -17,8 +16,8 @@ func (pc *MockPriceCalculator) GetPrice(call types.Call) int {
 }
 
 func TestBuyer(t *testing.T) {
-	forSalePubChan := publish.StartPublisher(pubsub.SalesDiscoveryPort)
-	soldToPubChan := publish.StartPublisher(pubsub.SoldToDiscoveryPort)
+	forSalePubChan := pubsub.StartPublisher(pubsub.SalesDiscoveryPort)
+	soldToPubChan := pubsub.StartPublisher(pubsub.SoldToDiscoveryPort)
 
 	elevatorID, err := mac.GetMacAddr()
 	if err != nil {

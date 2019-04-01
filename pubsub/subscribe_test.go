@@ -1,15 +1,16 @@
-package subscribe
+package pubsub
 
 import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"github.com/sigtot/sanntid/utils"
 	"net/http"
 	"testing"
 	"time"
 )
 
-type Dude struct {
+type SubDude struct {
 	WeekDay string `json:"WeekDay"`
 }
 
@@ -18,7 +19,7 @@ func TestSubscriber(t *testing.T) {
 	receivedBufs, httpPort := StartSubscriber(41000, "sales")
 
 	// Publish
-	myDude := Dude{WeekDay: "Wednesday"}
+	myDude := SubDude{WeekDay: "Wednesday"}
 	myDudeJson, err := json.Marshal(myDude)
 	if err != nil {
 		t.Fatal("Could not marshal json")
@@ -28,11 +29,11 @@ func TestSubscriber(t *testing.T) {
 		fmt.Printf("Got response %x %x \n", resp.StatusCode, resp.Status)
 	}
 	err = resp.Body.Close()
-	okOrPanic(err)
+	utils.OkOrPanic(err)
 
 	select {
 	case buf := <-receivedBufs:
-		myReceivedDude := Dude{}
+		myReceivedDude := SubDude{}
 		err = json.Unmarshal(buf, &myReceivedDude)
 		if err != nil {
 			t.Logf("Could not unmarshal json, %s\n", err.Error())

@@ -8,8 +8,6 @@ import (
 	"fmt"
 	"github.com/sigtot/sanntid/mac"
 	"github.com/sigtot/sanntid/pubsub"
-	"github.com/sigtot/sanntid/pubsub/publish"
-	"github.com/sigtot/sanntid/pubsub/subscribe"
 	"github.com/sigtot/sanntid/types"
 	"github.com/sigtot/sanntid/utils"
 	"github.com/sirupsen/logrus"
@@ -31,10 +29,10 @@ type PriceCalculator interface {
 // A buyer publishes bids and sale acknowledgements.
 // A PriceCalculator interface is used to get the price on a call.
 func StartBuying(priceCalc PriceCalculator, newOrders chan types.Order) {
-	bidPubChan := publish.StartPublisher(pubsub.BidDiscoveryPort)
-	ackPubChan := publish.StartPublisher(pubsub.AckDiscoveryPort)
-	forSaleSubChan, _ := subscribe.StartSubscriber(pubsub.SalesDiscoveryPort, pubsub.SalesTopic)
-	soldToSubChan, _ := subscribe.StartSubscriber(pubsub.SoldToDiscoveryPort, pubsub.SoldToTopic)
+	bidPubChan := pubsub.StartPublisher(pubsub.BidDiscoveryPort)
+	ackPubChan := pubsub.StartPublisher(pubsub.AckDiscoveryPort)
+	forSaleSubChan, _ := pubsub.StartSubscriber(pubsub.SalesDiscoveryPort, pubsub.SalesTopic)
+	soldToSubChan, _ := pubsub.StartSubscriber(pubsub.SoldToDiscoveryPort, pubsub.SoldToTopic)
 
 	elevatorID, _ := mac.GetMacAddr()
 

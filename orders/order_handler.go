@@ -8,7 +8,6 @@ import (
 	"encoding/json"
 	"github.com/sigtot/elevio"
 	"github.com/sigtot/sanntid/pubsub"
-	"github.com/sigtot/sanntid/pubsub/publish"
 	"github.com/sigtot/sanntid/types"
 	"github.com/sigtot/sanntid/utils"
 	"github.com/sirupsen/logrus"
@@ -47,7 +46,7 @@ func StartOrderHandler(
 	currentGoals chan types.Order,
 	arrivals chan types.Order,
 	elev ElevInterface) (*OrderHandler, chan types.Order) {
-	orderDeliveredPubChan := publish.StartPublisher(pubsub.OrderDeliveredDiscoveryPort)
+	orderDeliveredPubChan := pubsub.StartPublisher(pubsub.OrderDeliveredDiscoveryPort)
 	newOrders := make(chan types.Order)
 
 	oh := OrderHandler{elev: elev}
@@ -67,7 +66,7 @@ func StartOrderHandler(
 				// Set next goal
 				oh.orders = append(oh.orders, order)
 				nextGoal, err := getNextGoal(oh.orders, oh.elev)
-				okOrPanic(err)
+				utils.OkOrPanic(err)
 				utils.LogOrder(log, moduleName, "Set next goal", nextGoal)
 				currentGoals <- nextGoal
 			case arrival := <-arrivals:
@@ -84,7 +83,7 @@ func StartOrderHandler(
 
 				// Publish order delivered
 				arrivalJson, err := json.Marshal(arrival)
-				okOrPanic(err)
+				utils.OkOrPanic(err)
 				go func() {
 					timeout := time.After(1000 * time.Millisecond)
 					for {
@@ -101,7 +100,7 @@ func StartOrderHandler(
 				if len(oh.orders) > 0 {
 					nextGoal, err := getNextGoal(oh.orders, oh.elev)
 					utils.LogOrder(log, moduleName, "Set next goal", nextGoal)
-					okOrPanic(err)
+					utils.OkOrPanic(err)
 					currentGoals <- nextGoal
 				}
 			}
@@ -114,7 +113,7 @@ func StartOrderHandler(
 // delay using the delayed counter.
 func (oh *OrderHandler) GetPrice(call types.Call) int {
 	price, err := calcPriceFromQueue(types.Order{Call: call}, oh.orders, oh.elev.GetPos(), oh.elev.GetDir())
-	okOrPanic(err)
+	utils.OkOrPanic(err)
 	if len(oh.orders) > 0 {
 		count := <-oh.delayedCounter.Count
 		price += int(deliveryDelayWeight * count)
@@ -131,10 +130,4 @@ func getNextGoal(orders []types.Order, elev ElevInterface) (types.Order, error) 
 		return types.Order{}, err
 	}
 	return sortedOrders[0], nil
-}
-
-func okOrPanic(err error) {
-	if err != nil {
-		panic(err)
-	}
 }

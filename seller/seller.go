@@ -9,8 +9,6 @@ import (
 	"fmt"
 	"github.com/sigtot/sanntid/hotchan"
 	"github.com/sigtot/sanntid/pubsub"
-	"github.com/sigtot/sanntid/pubsub/publish"
-	"github.com/sigtot/sanntid/pubsub/subscribe"
 	"github.com/sigtot/sanntid/types"
 	"github.com/sigtot/sanntid/utils"
 	"github.com/sirupsen/logrus"
@@ -36,10 +34,10 @@ const moduleName = "SELLER"
 func StartSelling(newCalls chan types.Call) {
 	state := idle
 
-	forSalePubChan := publish.StartPublisher(pubsub.SalesDiscoveryPort)
-	soldToPubChan := publish.StartPublisher(pubsub.SoldToDiscoveryPort)
-	bidSubChan, _ := subscribe.StartSubscriber(pubsub.BidDiscoveryPort, pubsub.BidTopic)
-	ackSubChan, _ := subscribe.StartSubscriber(pubsub.AckDiscoveryPort, pubsub.AckTopic)
+	forSalePubChan := pubsub.StartPublisher(pubsub.SalesDiscoveryPort)
+	soldToPubChan := pubsub.StartPublisher(pubsub.SoldToDiscoveryPort)
+	bidSubChan, _ := pubsub.StartSubscriber(pubsub.BidDiscoveryPort, pubsub.BidTopic)
+	ackSubChan, _ := pubsub.StartSubscriber(pubsub.AckDiscoveryPort, pubsub.AckTopic)
 
 	var log = logrus.New()
 

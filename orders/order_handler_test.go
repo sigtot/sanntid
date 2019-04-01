@@ -4,8 +4,9 @@ import (
 	"encoding/json"
 	"github.com/sigtot/elevio"
 	"github.com/sigtot/sanntid/pubsub"
-	"github.com/sigtot/sanntid/pubsub/subscribe"
 	"github.com/sigtot/sanntid/types"
+	"github.com/sigtot/sanntid/utils"
+	"log"
 	"testing"
 	"time"
 )
@@ -29,7 +30,7 @@ func TestOrderHandler(t *testing.T) {
 
 	mockElev := MockElevatorController{dir: elevio.MdUp, pos: 2.0}
 
-	orderDeliveredSubChan, _ := subscribe.StartSubscriber(pubsub.OrderDeliveredDiscoveryPort, "order del")
+	orderDeliveredSubChan, _ := pubsub.StartSubscriber(pubsub.OrderDeliveredDiscoveryPort, "order del")
 
 	_, newOrders := StartOrderHandler(currentGoals, arrivals, mockElev)
 
@@ -64,7 +65,7 @@ func TestOrderHandler(t *testing.T) {
 	js := <-orderDeliveredSubChan
 	var orderDelivered types.Order
 	err := json.Unmarshal(js, &orderDelivered)
-	okOrPanic(err)
+	utils.OkOrPanic(err)
 	if !OrdersEqual(orderDelivered, newerOrder) {
 		log.Fatal("Delivered order not equal to newer order")
 	}

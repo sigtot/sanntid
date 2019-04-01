@@ -2,10 +2,11 @@
 Package subscribe contains functionality for sending heartbeat signals,
 and setting up http-servers for communications between nodes.
 */
-package subscribe
+package pubsub
 
 import (
 	"fmt"
+	"github.com/sigtot/sanntid/utils"
 	"io/ioutil"
 	"math/rand"
 	"net"
@@ -76,14 +77,14 @@ func subHandler(w http.ResponseWriter, r *http.Request, receivedBuffs chan []byt
 // The port corresponds to the topic of the subscriber.
 func sendAliveSignal(discoveryPort int, publishPort int, topic string) {
 	sAddr, err := net.ResolveUDPAddr("udp", fmt.Sprintf("255.255.255.255:%d", discoveryPort))
-	okOrPanic(err)
+	utils.OkOrPanic(err)
 	lAddr, err := net.ResolveUDPAddr("udp", fmt.Sprintf("localhost:%d", discoveryPort))
-	okOrPanic(err)
+	utils.OkOrPanic(err)
 	conn, err := net.ListenPacket("udp", fmt.Sprintf(":%d", publishPort))
-	okOrPanic(err)
+	utils.OkOrPanic(err)
 	defer func() {
 		err := conn.Close()
-		okOrPanic(err)
+		utils.OkOrPanic(err)
 	}()
 
 	for {
@@ -91,17 +92,11 @@ func sendAliveSignal(discoveryPort int, publishPort int, topic string) {
 		if err != nil {
 			if strings.Contains(err.Error(), "network is unreachable") {
 				_, err = conn.WriteTo([]byte(topic), lAddr)
-				okOrPanic(err)
+				utils.OkOrPanic(err)
 			} else {
 				panic(err)
 			}
 		}
 		time.Sleep(aliveSignalInterval * time.Millisecond)
-	}
-}
-
-func okOrPanic(err error) {
-	if err != nil {
-		panic(err)
 	}
 }

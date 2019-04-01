@@ -1,4 +1,4 @@
-package publish
+package pubsub
 
 import (
 	"encoding/json"
@@ -9,7 +9,7 @@ import (
 	"time"
 )
 
-type Dude struct {
+type PubDude struct {
 	WeekDay string `json:"WeekDay"`
 }
 
@@ -20,7 +20,7 @@ func TestPublish(t *testing.T) {
 		http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 			buf, err := ioutil.ReadAll(r.Body)
 
-			myReceivedDude := Dude{}
+			myReceivedDude := PubDude{}
 			err = json.Unmarshal(buf, &myReceivedDude)
 			if err != nil {
 				t.Logf("Could not unmarshal json, %s\n", err.Error())
@@ -40,7 +40,7 @@ func TestPublish(t *testing.T) {
 	}()
 
 	// Publish
-	myDude := Dude{WeekDay: "Wednesday"}
+	myDude := PubDude{WeekDay: "Wednesday"}
 	myDudeJson, err := json.Marshal(myDude)
 	if err != nil {
 		t.Fatal("Could not marshal json")

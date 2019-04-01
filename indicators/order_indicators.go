@@ -10,7 +10,6 @@ import (
 	"github.com/sigtot/elevio"
 	"github.com/sigtot/sanntid/mac"
 	"github.com/sigtot/sanntid/pubsub"
-	"github.com/sigtot/sanntid/pubsub/subscribe"
 	"github.com/sigtot/sanntid/types"
 	"github.com/sigtot/sanntid/utils"
 	"github.com/sirupsen/logrus"
@@ -26,8 +25,8 @@ const moduleName = "ORDER IND"
 // order deliveries on the network, updating the order indicators accordingly.
 // An indicator handler subscribes to sale acknowledgements and order deliveries.
 func StartIndicatorHandler(quit <-chan int, wg *sync.WaitGroup) {
-	ackSubChan, _ := subscribe.StartSubscriber(pubsub.AckDiscoveryPort, pubsub.AckTopic)
-	orderDeliveredSubChan, _ := subscribe.StartSubscriber(pubsub.OrderDeliveredDiscoveryPort, pubsub.OrderDeliveredTopic)
+	ackSubChan, _ := pubsub.StartSubscriber(pubsub.AckDiscoveryPort, pubsub.AckTopic)
+	orderDeliveredSubChan, _ := pubsub.StartSubscriber(pubsub.OrderDeliveredDiscoveryPort, pubsub.OrderDeliveredTopic)
 	allOff()
 	macAddr, err := mac.GetMacAddr()
 	if err != nil {

@@ -16,3 +16,9 @@ func OrderDir2MDDir(orderDir types.Direction) (mdDir elevio.MotorDirection, err 
 	}
 	return elevio.MdStop, errors.New("conversion from invalid order direction to motor direction")
 }
+
+func OkOrPanic(err error) {
+	if err != nil {
+		panic(err)
+	}
+}

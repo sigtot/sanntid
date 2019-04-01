@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/sigtot/sanntid/pubsub"
-	"github.com/sigtot/sanntid/pubsub/subscribe"
 	bolt "go.etcd.io/bbolt"
 	"io"
 	"os"
@@ -29,7 +28,7 @@ func TestStartDbDistributor(t *testing.T) {
 		t.Fatal("Could not write to db")
 	}
 
-	dbSubChan, _ := subscribe.StartSubscriber(pubsub.DbDiscoveryPort, pubsub.DbDiscoveryTopic)
+	dbSubChan, _ := pubsub.StartSubscriber(pubsub.DbDiscoveryPort, pubsub.DbDiscoveryTopic)
 
 	quit := make(chan int)
 	StartDbDistributor(db, testDbName, quit)

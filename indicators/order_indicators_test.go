@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"github.com/sigtot/elevio"
 	"github.com/sigtot/sanntid/pubsub"
-	"github.com/sigtot/sanntid/pubsub/publish"
 	"github.com/sigtot/sanntid/types"
 	"log"
 	"sync"
@@ -19,8 +18,8 @@ func TestStartHandlingIndicators(t *testing.T) {
 	var wg sync.WaitGroup
 	quit := make(chan int)
 	StartIndicatorHandler(quit, &wg)
-	ackPubChan := publish.StartPublisher(pubsub.AckDiscoveryPort)
-	orderDeliveredPubChan := publish.StartPublisher(pubsub.OrderDeliveredDiscoveryPort)
+	ackPubChan := pubsub.StartPublisher(pubsub.AckDiscoveryPort)
+	orderDeliveredPubChan := pubsub.StartPublisher(pubsub.OrderDeliveredDiscoveryPort)
 	call := types.Call{Type: types.Cab, Floor: 2, Dir: types.InvalidDir, ElevatorID: ""}
 	order1 := types.Order{Call: call}
 	bid1 := types.Bid{Call: call, Price: 1, ElevatorID: ""}

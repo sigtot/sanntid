@@ -4,8 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/sigtot/sanntid/pubsub"
-	"github.com/sigtot/sanntid/pubsub/publish"
-	"github.com/sigtot/sanntid/pubsub/subscribe"
 	"github.com/sigtot/sanntid/types"
 	"testing"
 	"time"
@@ -20,11 +18,11 @@ func TestSeller(t *testing.T) {
 	newCalls := make(chan types.Call)
 	go StartSelling(newCalls)
 
-	bidPubChan := publish.StartPublisher(pubsub.BidDiscoveryPort)
-	ackPubChan := publish.StartPublisher(pubsub.AckDiscoveryPort)
-	forSaleSubChan, _ := subscribe.StartSubscriber(pubsub.SalesDiscoveryPort, pubsub.SalesTopic)
-	soldToSubChan, _ := subscribe.StartSubscriber(pubsub.SoldToDiscoveryPort, pubsub.SoldToTopic)
-	ackSubChan, _ := subscribe.StartSubscriber(pubsub.AckDiscoveryPort, pubsub.AckTopic)
+	bidPubChan := pubsub.StartPublisher(pubsub.BidDiscoveryPort)
+	ackPubChan := pubsub.StartPublisher(pubsub.AckDiscoveryPort)
+	forSaleSubChan, _ := pubsub.StartSubscriber(pubsub.SalesDiscoveryPort, pubsub.SalesTopic)
+	soldToSubChan, _ := pubsub.StartSubscriber(pubsub.SoldToDiscoveryPort, pubsub.SoldToTopic)
+	ackSubChan, _ := pubsub.StartSubscriber(pubsub.AckDiscoveryPort, pubsub.AckTopic)
 
 	firstCall := types.Call{Type: types.Hall, Floor: 3, Dir: types.Down, ElevatorID: ""}
 	newCalls <- firstCall

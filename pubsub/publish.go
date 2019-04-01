@@ -1,12 +1,13 @@
 /*
 Package publish listens for subscribers, and items to be published will be posted to all active subscribers.
 */
-package publish
+package pubsub
 
 import (
 	"bytes"
 	"fmt"
 	"github.com/sigtot/sanntid/hotchan"
+	"github.com/sigtot/sanntid/utils"
 	"github.com/sirupsen/logrus"
 	"net"
 	"net/http"
@@ -67,19 +68,19 @@ func StartPublisher(discoveryPort int) chan []byte {
 // The discovery port are preassigned to a topic. All active subscribers are passed to the discoveredSubs channel.
 func listenForSubscribers(discoveryPort int, discoveredSubs chan subscriber) {
 	lAddr, err := net.ResolveUDPAddr("udp", fmt.Sprintf(":%d", discoveryPort))
-	okOrPanic(err)
+	utils.OkOrPanic(err)
 
 	conn, err := net.ListenUDP("udp", lAddr)
-	okOrPanic(err)
+	utils.OkOrPanic(err)
 	defer func() {
 		err := conn.Close()
-		okOrPanic(err)
+		utils.OkOrPanic(err)
 	}()
 
 	buf := make([]byte, 1024)
 	for {
 		_, addr, err := conn.ReadFromUDP(buf)
-		okOrPanic(err)
+		utils.OkOrPanic(err)
 		topic := strings.TrimRight(string(buf), "\x00") // Trim away zero values from buf when converting to string
 		sub := subscriber{IP: addr.String(), Topic: topic}
 		discoveredSubs <- sub
@@ -100,7 +101,7 @@ func publish(addr string, body []byte) {
 	}
 	if resp != nil {
 		err = resp.Body.Close()
-		okOrPanic(err)
+		utils.OkOrPanic(err)
 	}
 }
 
@@ -123,10 +124,4 @@ func logNewSub(log *logrus.Logger, moduleName string, info string, sub subscribe
 		"IP":    sub.IP,
 		"topic": sub.Topic,
 	}).Infof(logString, moduleName, info)
-}
-
-func okOrPanic(err error) {
-	if err != nil {
-		panic(err)
-	}
 }

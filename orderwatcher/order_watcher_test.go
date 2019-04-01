@@ -3,7 +3,6 @@ package orderwatcher
 import (
 	"encoding/json"
 	"github.com/sigtot/sanntid/pubsub"
-	"github.com/sigtot/sanntid/pubsub/publish"
 	"github.com/sigtot/sanntid/types"
 	bolt "go.etcd.io/bbolt"
 	"os"
@@ -64,8 +63,8 @@ func TestStartOrderWatcher(t *testing.T) {
 		*/
 	}()
 
-	ackPubChan := publish.StartPublisher(pubsub.AckDiscoveryPort)
-	orderDelPubChan := publish.StartPublisher(pubsub.OrderDeliveredDiscoveryPort)
+	ackPubChan := pubsub.StartPublisher(pubsub.AckDiscoveryPort)
+	orderDelPubChan := pubsub.StartPublisher(pubsub.OrderDeliveredDiscoveryPort)
 
 	callsForSale := make(chan types.Call)
 	quit := make(chan int)
@@ -96,7 +95,7 @@ func TestStartOrderWatcher(t *testing.T) {
 			tx.Bucket([]byte(testElevID)),
 		}
 		for i, b := range buckets {
-			var retrievedWT WatchThis
+			var retrievedWT watchThis
 			if err := json.Unmarshal(b.Get([]byte(strconv.Itoa(orders[i].Floor))), &retrievedWT); err != nil {
 				t.Fatal(err)
 			}

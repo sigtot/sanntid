@@ -13,7 +13,6 @@ import (
 	"fmt"
 	"github.com/sigtot/sanntid/mac"
 	"github.com/sigtot/sanntid/pubsub"
-	"github.com/sigtot/sanntid/pubsub/subscribe"
 	"github.com/sigtot/sanntid/types"
 	"github.com/sigtot/sanntid/utils"
 	"github.com/sirupsen/logrus"
@@ -55,9 +54,9 @@ type watchThis struct {
 // and synchronizes them with the local database.
 // An order watcher subscribes to sale acknowledgements, order deliveries and db distribution messages.
 func StartOrderWatcher(callsForSale chan types.Call, db *bolt.DB, quit <-chan int, wg *sync.WaitGroup) {
-	ackSubChan, _ := subscribe.StartSubscriber(pubsub.AckDiscoveryPort, pubsub.AckTopic)
-	orderDeliveredSubChan, _ := subscribe.StartSubscriber(pubsub.OrderDeliveredDiscoveryPort, pubsub.OrderDeliveredTopic)
-	dbSubChan, _ := subscribe.StartSubscriber(pubsub.DbDiscoveryPort, pubsub.DbDiscoveryTopic)
+	ackSubChan, _ := pubsub.StartSubscriber(pubsub.AckDiscoveryPort, pubsub.AckTopic)
+	orderDeliveredSubChan, _ := pubsub.StartSubscriber(pubsub.OrderDeliveredDiscoveryPort, pubsub.OrderDeliveredTopic)
+	dbSubChan, _ := pubsub.StartSubscriber(pubsub.DbDiscoveryPort, pubsub.DbDiscoveryTopic)
 
 	elevatorID, _ := mac.GetMacAddr()
 	log := logrus.New()
@@ -84,9 +83,9 @@ func StartOrderWatcher(callsForSale chan types.Call, db *bolt.DB, quit <-chan in
 
 				// Save watchThis in db
 				bName, err := getBucketName(wt)
-				okOrPanic(err)
+				utils.OkOrPanic(err)
 				err = writeToDb(db, bName, strconv.Itoa(wt.Call.Floor), wtJson)
-				okOrPanic(err)
+				utils.OkOrPanic(err)
 
 			case orderJson := <-orderDeliveredSubChan:
 				// Unmarshal order
@@ -99,9 +98,9 @@ func StartOrderWatcher(callsForSale chan types.Call, db *bolt.DB, quit <-chan in
 				// Remove order from database
 				wt := watchThis{ElevatorID: order.ElevatorID, Time: time.Now(), Call: order.Call}
 				bName, err := getBucketName(wt)
-				okOrPanic(err)
+				utils.OkOrPanic(err)
 				err = writeToDb(db, bName, strconv.Itoa(wt.Call.Floor), []byte{})
-				okOrPanic(err)
+				utils.OkOrPanic(err)
 			case <-dbTraversalTicker.C:
 				// Traverse database and identify orders not delivered in time
 				err := db.Update(func(tx *bolt.Tx) error {
@@ -132,7 +131,7 @@ func StartOrderWatcher(callsForSale chan types.Call, db *bolt.DB, quit <-chan in
 						return err
 					})
 				})
-				okOrPanic(err)
+				utils.OkOrPanic(err)
 			case dbMsgJson := <-dbSubChan:
 				// Unmarshal db message
 				dbMsg := dbMsg{}
@@ -148,22 +147,22 @@ func StartOrderWatcher(callsForSale chan types.Call, db *bolt.DB, quit <-chan in
 				var buf bytes.Buffer
 				buf.Write(dbMsg.Buf)
 				zr, err := gzip.NewReader(&buf)
-				okOrPanic(err)
+				utils.OkOrPanic(err)
 
 				// Copy received db file
 				f, err := os.Create(fmt.Sprintf("%s/%s", dbCopyDir, dbCopyName))
-				okOrPanic(err)
+				utils.OkOrPanic(err)
 				if _, err = io.Copy(f, zr); err != nil {
 					panic(err)
 				}
 				err = zr.Close()
-				okOrPanic(err)
+				utils.OkOrPanic(err)
 				err = f.Close()
-				okOrPanic(err)
+				utils.OkOrPanic(err)
 
 				// Open db from copied db file
 				dbCopy, err := bolt.Open(fmt.Sprintf("%s/%s", dbCopyDir, dbCopyName), dbCopyPerms, &bolt.Options{Timeout: dbCopyTimeout * time.Millisecond})
-				okOrPanic(err)
+				utils.OkOrPanic(err)
 
 				// Do union of received db and local db to sync state
 				err = db.Update(func(tx *bolt.Tx) error {
@@ -184,9 +183,9 @@ func StartOrderWatcher(callsForSale chan types.Call, db *bolt.DB, quit <-chan in
 						})
 					})
 				})
-				okOrPanic(err)
+				utils.OkOrPanic(err)
 				err = dbCopy.Close()
-				okOrPanic(err)
+				utils.OkOrPanic(err)
 				computationDuration := time.Now().Sub(timeBefore)
 				log.WithFields(logrus.Fields{
 					"took": fmt.Sprintf("%.3fs", computationDuration.Seconds()),
@@ -245,12 +244,6 @@ func initHallOrderBuckets(db *bolt.DB) error {
 		}
 		return nil
 	})
-}
-
-func okOrPanic(err error) {
-	if err != nil {
-		panic(err)
-	}
 }
 
 // Returns time to delivery for order, randomly distributed around its base time

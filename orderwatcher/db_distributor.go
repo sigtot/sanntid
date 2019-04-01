@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"github.com/sigtot/sanntid/mac"
 	"github.com/sigtot/sanntid/pubsub"
-	"github.com/sigtot/sanntid/pubsub/publish"
 	bolt "go.etcd.io/bbolt"
 	"io"
 	"os"
@@ -23,7 +22,7 @@ type dbMsg struct {
 // StartDbDistributor starts distributing the database of orders.
 // It compresses the file and publishes it as a DbMsg on the network.
 func StartDbDistributor(db *bolt.DB, dbName string, quit <-chan int) chan int {
-	dbPubChan := publish.StartPublisher(pubsub.DbDiscoveryPort)
+	dbPubChan := pubsub.StartPublisher(pubsub.DbDiscoveryPort)
 	elevatorID, err := mac.GetMacAddr()
 	if err != nil {
 		panic(err)
