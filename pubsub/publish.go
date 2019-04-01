@@ -1,6 +1,3 @@
-/*
-Package publish listens for subscribers, and items to be published will be posted to all active subscribers.
-*/
 package pubsub
 
 import (
