@@ -4,6 +4,7 @@ import (
 	"github.com/sigtot/elevio"
 	"github.com/sigtot/sanntid/orders"
 	"github.com/sigtot/sanntid/types"
+	"github.com/sigtot/sanntid/utils"
 	"testing"
 	"time"
 )
@@ -28,12 +29,12 @@ func TestStartElevController(t *testing.T) {
 	secondOrder := types.Order{Call: types.Call{Type: types.Cab, Floor: 2, Dir: types.InvalidDir}}
 	currentGoals <- firstOrder
 	arrived := <-goalArrivals
-	if !orders.OrdersEqual(firstOrder, arrived) {
+	if !utils.OrdersEqual(firstOrder, arrived) {
 		t.Fatal("Orders not equal")
 	}
 	currentGoals <- secondOrder
 	arrived = <-goalArrivals
-	if !orders.OrdersEqual(secondOrder, arrived) {
+	if !utils.OrdersEqual(secondOrder, arrived) {
 		t.Fatal("Orders not equal")
 	}
 }
@@ -54,7 +55,7 @@ func TestGoalOverride(t *testing.T) {
 	currentGoals <- secondOrder
 
 	arrived := <-goalArrivals
-	if !orders.OrdersEqual(secondOrder, arrived) {
+	if !utils.OrdersEqual(secondOrder, arrived) {
 		t.Fatal("Orders not equal")
 	}
 }

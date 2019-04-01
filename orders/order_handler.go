@@ -72,7 +72,7 @@ func StartOrderHandler(
 			case arrival := <-arrivals:
 				// Delete corresponding order
 				for i, v := range oh.orders {
-					if OrdersEqual(v, arrival) {
+					if utils.OrdersEqual(v, arrival) {
 						oh.orders = append(oh.orders[:i], oh.orders[i+1:]...)
 						utils.LogOrder(log, moduleName, "Deleted Order", arrival)
 						break

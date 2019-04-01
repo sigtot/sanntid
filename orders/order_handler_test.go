@@ -51,7 +51,7 @@ func TestOrderHandler(t *testing.T) {
 	newOrders <- newerOrder
 	select {
 	case currentGoal = <-currentGoals:
-		if !OrdersEqual(currentGoal, newerOrder) {
+		if !utils.OrdersEqual(currentGoal, newerOrder) {
 			t.Fatal("Order and current goal does not match")
 		}
 	case <-time.After(100 * time.Millisecond):
@@ -66,13 +66,13 @@ func TestOrderHandler(t *testing.T) {
 	var orderDelivered types.Order
 	err := json.Unmarshal(js, &orderDelivered)
 	utils.OkOrPanic(err)
-	if !OrdersEqual(orderDelivered, newerOrder) {
+	if !utils.OrdersEqual(orderDelivered, newerOrder) {
 		log.Fatal("Delivered order not equal to newer order")
 	}
 
 	select {
 	case currentGoal = <-currentGoals:
-		if !OrdersEqual(currentGoal, newOrder) {
+		if !utils.OrdersEqual(currentGoal, newOrder) {
 			t.Fatal("Order and current goal does not match")
 		}
 	case <-time.After(100 * time.Millisecond):

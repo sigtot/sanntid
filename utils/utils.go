@@ -22,3 +22,8 @@ func OkOrPanic(err error) {
 		panic(err)
 	}
 }
+
+// OrdersEqual checks equality of dir, type and floor
+func OrdersEqual(order1 types.Order, order2 types.Order) bool {
+	return order1.Dir == order2.Dir && order1.Type == order2.Type && order1.Floor == order2.Floor
+}
