@@ -34,7 +34,8 @@ func StartBuying(priceCalc PriceCalculator, newOrders chan types.Order) {
 	forSaleSubChan, _ := pubsub.StartSubscriber(pubsub.SalesDiscoveryPort, pubsub.SalesTopic)
 	soldToSubChan, _ := pubsub.StartSubscriber(pubsub.SoldToDiscoveryPort, pubsub.SoldToTopic)
 
-	elevatorID, _ := mac.GetMacAddr()
+	elevatorID, err := mac.GetMacAddr()
+	utils.OkOrPanic(err)
 
 	var log = logrus.New()
 
