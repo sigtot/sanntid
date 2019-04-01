@@ -30,7 +30,7 @@ const moduleName = "ORDER HANDLER"
 // robust against motor failure and similar.
 type OrderHandler struct {
 	orders         []types.Order
-	delayedCounter DelayedCounter
+	delayedCounter utils.DelayedCounter
 	elev           ElevInterface
 }
 
