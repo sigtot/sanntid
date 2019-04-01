@@ -32,7 +32,6 @@ type elev struct {
 	dir      elevio.MotorDirection
 	pos      float64
 	goal     types.Order
-	moving   bool // TODO: remove this as it is redundant i think
 	doorOpen bool
 }
 
@@ -124,7 +123,6 @@ func StartElevController(
 func (elev *elev) Init(addr string, numFloors int, floorArrivals <-chan int) error {
 	elevio.Init(addr, numFloors)
 
-	elev.moving = true
 	elevio.SetMotorDirection(elevio.MdDown)
 	elev.dir = elevio.MdDown
 
@@ -160,12 +158,10 @@ func goalDir(goal types.Order, pos float64) (dir elevio.MotorDirection, updateDi
 }
 
 func (elev *elev) stop() {
-	elev.moving = false
 	elevio.SetMotorDirection(elevio.MdStop)
 }
 
 func (elev *elev) start() {
-	elev.moving = true
 	elevio.SetMotorDirection(elev.dir)
 }
 
