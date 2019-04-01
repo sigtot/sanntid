@@ -14,10 +14,10 @@ func GetMacAddr() (string, error) {
 	err := error(nil)
 	for _, interfaceName := range interfaceNames {
 		mac, newErr := net.InterfaceByName(interfaceName)
-		err = mergeErrors(err, newErr)
-		if err == nil {
-			return mac.HardwareAddr.String(), err
+		if newErr == nil {
+			return mac.HardwareAddr.String(), nil
 		}
+		err = mergeErrors(err, newErr)
 	}
 	return "", err
 }

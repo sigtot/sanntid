@@ -91,6 +91,7 @@ func listenForSubscribers(discoveryPort int, discoveredSubs chan subscriber) {
 func publish(addr string, body []byte) {
 	resp, err := http.Post(fmt.Sprintf("http://%s", addr), "application/json", bytes.NewBuffer(body))
 	if err != nil {
+		// TODO: ????????
 		if strings.Contains(err.Error(), "connection refused") || strings.Contains(err.Error(), "network is unreachable") || strings.Contains(err.Error(), "i/o timeout") || strings.Contains(err.Error(), "connection reset by peer") {
 			logrus.WithFields(logrus.Fields{
 				"IP": addr,

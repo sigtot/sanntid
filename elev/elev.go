@@ -45,22 +45,20 @@ func StartElevController(
 	quit <-chan int,
 	wg *sync.WaitGroup) *elev {
 	var log = logrus.New()
+	atGoal := make(chan int, 1024)
 
 	elev := elev{}
 	elevServerAddr := fmt.Sprintf("%s:%d", elevServerHost, elevPort)
 	err := elev.Init(elevServerAddr, numElevFloors, floorArrivals)
-	if err != nil {
-		panic(err)
-	}
+	utils.OkOrPanic(err)
+
 	log.WithFields(logrus.Fields{
 		"addr": elevServerAddr,
 	}).Infof(logString, moduleName, "Successfully initiated elev server")
 
-	atGoal := make(chan int, 1024)
+	var startAgain <-chan time.Time
 
 	wg.Add(1)
-
-	var startAgain <-chan time.Time
 	go func() {
 		defer wg.Done()
 
@@ -68,11 +66,12 @@ func StartElevController(
 			select {
 			case elev.goal = <-currentGoals:
 				// Set direction to deliver new goal order
-				if newGoalDir, updateDir, err := goalDir(elev.goal, elev.pos); updateDir == true && err == nil {
+				newGoalDir, updateDir, err := goalDir(elev.goal, elev.pos)
+				utils.OkOrPanic(err)
+				if updateDir == true {
 					elev.dir = newGoalDir
-				} else if err != nil {
-					panic(err)
 				}
+
 				if elev.atGoal() {
 					atGoal <- 1
 				} else if !elev.doorOpen {

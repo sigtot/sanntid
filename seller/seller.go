@@ -6,7 +6,6 @@ package seller
 
 import (
 	"encoding/json"
-	"fmt"
 	"github.com/sigtot/sanntid/hotchan"
 	"github.com/sigtot/sanntid/pubsub"
 	"github.com/sigtot/sanntid/types"
@@ -63,9 +62,7 @@ func StartSelling(newCalls chan types.Call) {
 					// Marshal and announce call for sale on network
 					itemForSale = <-forSale.Out
 					js, err := json.Marshal(itemForSale.Val)
-					if err != nil {
-						panic(fmt.Sprintf("Could not marshal call %s", err.Error()))
-					}
+					utils.OkOrPanic(err)
 					forSalePubChan <- js
 
 					utils.LogCall(log, moduleName, "Started a new sale", itemForSale.Val.(types.Call))
@@ -82,9 +79,7 @@ func StartSelling(newCalls chan types.Call) {
 						// Unmarshal and add bid to list of received bids
 						bid := types.Bid{}
 						err := json.Unmarshal(bidJson, &bid)
-						if err != nil {
-							panic(fmt.Sprintf("Could not unmarshal bid %s", err.Error()))
-						}
+						utils.OkOrPanic(err)
 						if bid.Call == itemForSale.Val {
 							recvBids = append(recvBids, bid)
 						}
@@ -101,9 +96,7 @@ func StartSelling(newCalls chan types.Call) {
 						// Get lowest bid and announce bidding round winner
 						lowestBid = getLowestBid(recvBids)
 						js, err := json.Marshal(lowestBid)
-						if err != nil {
-							panic(fmt.Sprintf("Could not marshal call %s", err.Error()))
-						}
+						utils.OkOrPanic(err)
 						soldToPubChan <- js
 						state = waitingForAck
 						break L1
@@ -118,9 +111,7 @@ func StartSelling(newCalls chan types.Call) {
 						// Unmarshal and verify received acknowledgement
 						ack := types.Ack{}
 						err := json.Unmarshal(ackJson, &ack)
-						if err != nil {
-							panic(fmt.Sprintf("Could not unmarshal ack %s", err.Error()))
-						}
+						utils.OkOrPanic(err)
 						if ack.Bid == lowestBid {
 							utils.LogAck(log, moduleName, "Got ack from lowest bidder", ack)
 							state = idle

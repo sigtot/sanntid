@@ -31,9 +31,7 @@ func findAvailPort() (port int) {
 		}
 		if conn != nil {
 			err = conn.Close()
-			if err != nil {
-				panic(err)
-			}
+			utils.OkOrPanic(err)
 			break
 		}
 	}

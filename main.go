@@ -63,9 +63,7 @@ func main() {
 	seller.StartSelling(callsForSale)
 
 	orderWatcherDb, err := bolt.Open(dbName, dbPerms, &bolt.Options{Timeout: dbTimeout * time.Millisecond})
-	if err != nil {
-		panic(err)
-	}
+	utils.OkOrPanic(err)
 	quitOrderWatcher := make(chan int)
 	orderwatcher.StartOrderWatcher(callsForSale, orderWatcherDb, quitOrderWatcher, &wg)
 
@@ -84,9 +82,7 @@ func main() {
 	quitIndicators <- 0
 	quitOrderWatcher <- 0
 	err = orderWatcherDb.Close()
-	if err != nil {
-		panic(err)
-	}
+	utils.OkOrPanic(err)
 	wg.Wait()
 	utils.Log(log, moduleName, "Stopped elevator")
 }

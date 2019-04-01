@@ -7,6 +7,7 @@ import (
 	"github.com/sigtot/elevio"
 	"github.com/sigtot/sanntid/mac"
 	"github.com/sigtot/sanntid/types"
+	"github.com/sigtot/sanntid/utils"
 )
 
 // StartButtonHandler starts a go-routine that listens for button events on the buttonEvents channel,
@@ -14,9 +15,7 @@ import (
 // by a seller.
 func StartButtonHandler(buttonEvents chan elevio.ButtonEvent, callsForSale chan types.Call) {
 	ID, err := mac.GetMacAddr()
-	if err != nil {
-		panic("Could not get mac address")
-	}
+	utils.OkOrPanic(err)
 	go func() {
 		for {
 			buttonEvent := <-buttonEvents

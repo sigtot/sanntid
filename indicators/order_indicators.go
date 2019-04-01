@@ -6,7 +6,6 @@ package indicators
 
 import (
 	"encoding/json"
-	"fmt"
 	"github.com/sigtot/elevio"
 	"github.com/sigtot/sanntid/mac"
 	"github.com/sigtot/sanntid/pubsub"
@@ -29,9 +28,7 @@ func StartIndicatorHandler(quit <-chan int, wg *sync.WaitGroup) {
 	orderDeliveredSubChan, _ := pubsub.StartSubscriber(pubsub.OrderDeliveredDiscoveryPort, pubsub.OrderDeliveredTopic)
 	allOff()
 	macAddr, err := mac.GetMacAddr()
-	if err != nil {
-		panic(err)
-	}
+	utils.OkOrPanic(err)
 	log := logrus.New()
 	wg.Add(1)
 	go func() {
@@ -42,9 +39,7 @@ func StartIndicatorHandler(quit <-chan int, wg *sync.WaitGroup) {
 			case ackJson := <-ackSubChan:
 				ack := types.Ack{}
 				err := json.Unmarshal(ackJson, &ack)
-				if err != nil {
-					panic(fmt.Sprintf("Could not unmarshal ack %s", err.Error()))
-				}
+				utils.OkOrPanic(err)
 
 				withinRange := ack.Call.Floor <= topFloor || ack.Call.Floor >= bottomFloor
 				if withinRange && (ack.Call.Type == types.Hall || ack.ElevatorID == macAddr) {
@@ -55,9 +50,7 @@ func StartIndicatorHandler(quit <-chan int, wg *sync.WaitGroup) {
 				utils.Log(log, moduleName, "Got order delivered")
 				order := types.Order{}
 				err := json.Unmarshal(orderJson, &order)
-				if err != nil {
-					panic(fmt.Sprintf("Could not unmarshal order %s", err.Error()))
-				}
+				utils.OkOrPanic(err)
 				withinRange := order.Floor <= topFloor || order.Floor >= bottomFloor
 				if withinRange && (order.Type == types.Hall || order.ElevatorID == macAddr) {
 					elevio.SetButtonLamp(getBtnType(order.Type, order.Dir), order.Floor, false)

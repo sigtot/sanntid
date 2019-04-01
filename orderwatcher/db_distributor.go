@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"github.com/sigtot/sanntid/mac"
 	"github.com/sigtot/sanntid/pubsub"
+	"github.com/sigtot/sanntid/utils"
 	bolt "go.etcd.io/bbolt"
 	"io"
 	"os"
@@ -24,9 +25,7 @@ type dbMsg struct {
 func StartDbDistributor(db *bolt.DB, dbName string, quit <-chan int) chan int {
 	dbPubChan := pubsub.StartPublisher(pubsub.DbDiscoveryPort)
 	elevatorID, err := mac.GetMacAddr()
-	if err != nil {
-		panic(err)
-	}
+	utils.OkOrPanic(err)
 	quitAck := make(chan int)
 
 	go func() {
@@ -35,15 +34,11 @@ func StartDbDistributor(db *bolt.DB, dbName string, quit <-chan int) chan int {
 			select {
 			case <-dbDistributeTicker.C:
 				buf, err := getCompressesCopyDb(db, dbName)
-				if err != nil {
-					panic(err)
-				}
+				utils.OkOrPanic(err)
 
 				dbMsg := dbMsg{Buf: buf.Bytes(), SenderID: elevatorID}
 				dbJson, err := json.Marshal(dbMsg)
-				if err != nil {
-					panic("Could not marshal buffer")
-				}
+				utils.OkOrPanic(err)
 
 				dbPubChan <- dbJson
 			case <-quit:

@@ -72,14 +72,10 @@ func StartOrderWatcher(callsForSale chan types.Call, db *bolt.DB, quit <-chan in
 				// Unmarshal ack and translate to assignedOrder
 				ack := types.Ack{}
 				err := json.Unmarshal(ackJson, &ack)
-				if err != nil {
-					panic(fmt.Sprintf("Could not unmarshal ack %s", err.Error()))
-				}
+				utils.OkOrPanic(err)
 				ao := assignedOrder{OwnerID: ack.ElevatorID, AssignTime: time.Now(), Call: ack.Call}
 				aoJson, err := json.Marshal(ao)
-				if err != nil {
-					panic("Could not marshal assignedOrder")
-				}
+				utils.OkOrPanic(err)
 
 				// Save assignedOrder in db
 				bName, err := getBucketName(ao)
@@ -91,9 +87,7 @@ func StartOrderWatcher(callsForSale chan types.Call, db *bolt.DB, quit <-chan in
 				// Unmarshal order
 				order := types.Order{}
 				err := json.Unmarshal(orderJson, &order)
-				if err != nil {
-					panic(fmt.Sprintf("Could not unmarshal order %s", err.Error()))
-				}
+				utils.OkOrPanic(err)
 
 				// Remove order from database
 				ao := assignedOrder{OwnerID: order.ElevatorID, AssignTime: time.Now(), Call: order.Call}
@@ -136,9 +130,7 @@ func StartOrderWatcher(callsForSale chan types.Call, db *bolt.DB, quit <-chan in
 				// Unmarshal db message
 				dbMsg := dbMsg{}
 				err := json.Unmarshal(dbMsgJson, &dbMsg)
-				if err != nil {
-					panic(fmt.Sprintf("Could not unmarshal db message %s", err.Error()))
-				}
+				utils.OkOrPanic(err)
 				if dbMsg.SenderID == elevatorID {
 					break // No need to sync with local db
 				}
