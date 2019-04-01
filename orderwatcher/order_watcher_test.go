@@ -95,13 +95,13 @@ func TestStartOrderWatcher(t *testing.T) {
 			tx.Bucket([]byte(testElevID)),
 		}
 		for i, b := range buckets {
-			var retrievedWT watchThis
-			if err := json.Unmarshal(b.Get([]byte(strconv.Itoa(orders[i].Floor))), &retrievedWT); err != nil {
+			var retrievedAO assignedOrder
+			if err := json.Unmarshal(b.Get([]byte(strconv.Itoa(orders[i].Floor))), &retrievedAO); err != nil {
 				t.Fatal(err)
 			}
 
-			if !(retrievedWT.Call == orders[i].Call) {
-				t.Fatalf("Retrieved value %+v does not match %+v\n", retrievedWT, orders[i].Call)
+			if !(retrievedAO.Call == orders[i].Call) {
+				t.Fatalf("Retrieved value %+v does not match %+v\n", retrievedAO, orders[i].Call)
 			}
 		}
 		return nil

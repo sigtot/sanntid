@@ -41,9 +41,9 @@ const dbCopyName = "orderwatcher_copy.db"
 const dbCopyPerms = 0600
 const dbCopyTimeout = 500
 
-type watchThis struct {
-	ElevatorID string
-	Time       time.Time
+type assignedOrder struct {
+	OwnerID    string
+	AssignTime time.Time
 	Call       types.Call
 }
 
@@ -69,22 +69,22 @@ func StartOrderWatcher(callsForSale chan types.Call, db *bolt.DB, quit <-chan in
 		for {
 			select {
 			case ackJson := <-ackSubChan:
-				// Unmarshal ack and translate to watchThis
+				// Unmarshal ack and translate to assignedOrder
 				ack := types.Ack{}
 				err := json.Unmarshal(ackJson, &ack)
 				if err != nil {
 					panic(fmt.Sprintf("Could not unmarshal ack %s", err.Error()))
 				}
-				wt := watchThis{ElevatorID: ack.ElevatorID, Time: time.Now(), Call: ack.Call}
-				wtJson, err := json.Marshal(wt)
+				ao := assignedOrder{OwnerID: ack.ElevatorID, AssignTime: time.Now(), Call: ack.Call}
+				aoJson, err := json.Marshal(ao)
 				if err != nil {
-					panic("Could not marshal watchThis")
+					panic("Could not marshal assignedOrder")
 				}
 
-				// Save watchThis in db
-				bName, err := getBucketName(wt)
+				// Save assignedOrder in db
+				bName, err := getBucketName(ao)
 				utils.OkOrPanic(err)
-				err = writeToDb(db, bName, strconv.Itoa(wt.Call.Floor), wtJson)
+				err = writeToDb(db, bName, strconv.Itoa(ao.Call.Floor), aoJson)
 				utils.OkOrPanic(err)
 
 			case orderJson := <-orderDeliveredSubChan:
@@ -96,10 +96,10 @@ func StartOrderWatcher(callsForSale chan types.Call, db *bolt.DB, quit <-chan in
 				}
 
 				// Remove order from database
-				wt := watchThis{ElevatorID: order.ElevatorID, Time: time.Now(), Call: order.Call}
-				bName, err := getBucketName(wt)
+				ao := assignedOrder{OwnerID: order.ElevatorID, AssignTime: time.Now(), Call: order.Call}
+				bName, err := getBucketName(ao)
 				utils.OkOrPanic(err)
-				err = writeToDb(db, bName, strconv.Itoa(wt.Call.Floor), []byte{})
+				err = writeToDb(db, bName, strconv.Itoa(ao.Call.Floor), []byte{})
 				utils.OkOrPanic(err)
 			case <-dbTraversalTicker.C:
 				// Traverse database and identify orders not delivered in time
@@ -109,16 +109,16 @@ func StartOrderWatcher(callsForSale chan types.Call, db *bolt.DB, quit <-chan in
 							if string(v) == "" {
 								return nil
 							}
-							if wt, err := unmarshalWatchThis(v); err == nil {
-								if time.Now().After(wt.Time.Add(getTTD())) {
+							if ao, err := unmarshalAssignedOrder(v); err == nil {
+								if time.Now().After(ao.AssignTime.Add(getTTD())) {
 									// Resell order
-									callsForSale <- wt.Call
-									logWatchThis(log, moduleName, "Sent order to seller for resale", *wt)
+									callsForSale <- ao.Call
+									logAssignedOrder(log, moduleName, "Sent order to seller for resale", *ao)
 
 									// Update time
-									wt.Time = time.Now()
-									if wtJson, err := json.Marshal(wt); err == nil {
-										return b.Put(k, wtJson)
+									ao.AssignTime = time.Now()
+									if aoJson, err := json.Marshal(ao); err == nil {
+										return b.Put(k, aoJson)
 									}
 
 									return err
@@ -212,26 +212,26 @@ func writeToDb(db *bolt.DB, bName string, key string, value []byte) error {
 	})
 }
 
-func getBucketName(wt watchThis) (name string, err error) {
-	if wt.Call.Type == types.Hall {
-		if wt.Call.Dir == types.Up {
+func getBucketName(ao assignedOrder) (name string, err error) {
+	if ao.Call.Type == types.Hall {
+		if ao.Call.Dir == types.Up {
 			name = hallUpBucketName
-		} else if wt.Call.Dir == types.Down {
+		} else if ao.Call.Dir == types.Down {
 			name = hallDownBucketName
 		} else {
 			err = errors.New("unexpected non-direction")
 		}
-	} else if wt.Call.Type == types.Cab {
-		name = wt.ElevatorID
+	} else if ao.Call.Type == types.Cab {
+		name = ao.OwnerID
 	} else {
 		err = errors.New("call of unexpected type")
 	}
 	return name, err
 }
-func unmarshalWatchThis(wtJson []byte) (*watchThis, error) {
-	wt := watchThis{}
-	err := json.Unmarshal(wtJson, &wt)
-	return &wt, err
+func unmarshalAssignedOrder(aoJson []byte) (*assignedOrder, error) {
+	ao := assignedOrder{}
+	err := json.Unmarshal(aoJson, &ao)
+	return &ao, err
 }
 
 func initHallOrderBuckets(db *bolt.DB) error {
@@ -251,12 +251,12 @@ func getTTD() time.Duration {
 	return time.Duration(baseTTD+(rand.Intn(randTTDOffset)-randTTDOffset/2)) * time.Millisecond
 }
 
-func logWatchThis(log *logrus.Logger, moduleName string, info string, wt watchThis) {
+func logAssignedOrder(log *logrus.Logger, moduleName string, info string, ao assignedOrder) {
 	log.WithFields(logrus.Fields{
-		"type":  wt.Call.Type,
-		"floor": wt.Call.Floor,
-		"dir":   wt.Call.Dir,
-		"id":    wt.ElevatorID,
-		"time":  wt.Time,
+		"type":  ao.Call.Type,
+		"floor": ao.Call.Floor,
+		"dir":   ao.Call.Dir,
+		"id":    ao.OwnerID,
+		"time":  ao.AssignTime,
 	}).Infof(logString, moduleName, info)
 }
