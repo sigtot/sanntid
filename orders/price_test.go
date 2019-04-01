@@ -3,6 +3,7 @@ package orders
 import (
 	"github.com/sigtot/elevio"
 	"github.com/sigtot/sanntid/types"
+	"log"
 	"testing"
 )
 
