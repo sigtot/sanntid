@@ -226,18 +226,6 @@ func unmarshalAssignedOrder(aoJson []byte) (*assignedOrder, error) {
 	return &ao, err
 }
 
-func initHallOrderBuckets(db *bolt.DB) error {
-	return db.Update(func(tx *bolt.Tx) error {
-		if _, err := tx.CreateBucketIfNotExists([]byte(hallUpBucketName)); err != nil {
-			return err
-		}
-		if _, err := tx.CreateBucketIfNotExists([]byte(hallDownBucketName)); err != nil {
-			return err
-		}
-		return nil
-	})
-}
-
 // Returns time to delivery for order, randomly distributed around its base time
 func getTTD() time.Duration {
 	return time.Duration(baseTTD+(rand.Intn(randTTDOffset)-randTTDOffset/2)) * time.Millisecond

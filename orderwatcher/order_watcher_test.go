@@ -5,7 +5,6 @@ import (
 	"github.com/sigtot/sanntid/pubsub"
 	"github.com/sigtot/sanntid/types"
 	bolt "go.etcd.io/bbolt"
-	"os"
 	"strconv"
 	"sync"
 	"testing"
@@ -16,36 +15,6 @@ const testDbName = "test.db"
 const testElevID = "cb:32:f6:7e:2d:cc"
 const testDbPerms = 0600
 const testDbTimeout = 1000
-
-func TestInitHallOrderBuckets(t *testing.T) {
-	db, err := bolt.Open(testDbName, testDbPerms, &bolt.Options{Timeout: testDbTimeout * time.Millisecond})
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer func() {
-		if err := db.Close(); err != nil {
-			panic(err)
-		}
-	}()
-	err = initHallOrderBuckets(db)
-	if err != nil {
-		t.Fatal(err)
-	}
-	err = db.View(func(tx *bolt.Tx) error {
-		upB := tx.Bucket([]byte(hallUpBucketName))
-		downB := tx.Bucket([]byte(hallDownBucketName))
-		if upB == nil || downB == nil {
-			t.Fatal("Expected buckets to be created successfully, but they are nil after creation")
-		}
-		return nil
-	})
-	if err != nil {
-		t.Fatal(err)
-	}
-	if err := os.Remove(testDbName); err != nil {
-		panic(err)
-	}
-}
 
 func TestStartOrderWatcher(t *testing.T) {
 	db, err := bolt.Open(testDbName, testDbPerms, &bolt.Options{Timeout: testDbTimeout * time.Millisecond})
