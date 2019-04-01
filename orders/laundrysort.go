@@ -46,7 +46,7 @@ func sortOrders(orders []types.Order, position float64, dir elevio.MotorDirectio
 			}
 		}
 
-		// Move to next iterate in elevator cycle. Reverse direction if at floor bounds.
+		// Move to next iterate in elevator cycle. Reverse direction if at floor bounds
 		if floor >= topFloor && dir == elevio.MdUp {
 			dir = elevio.MdDown
 		} else if floor <= bottomFloor && dir == elevio.MdDown {
@@ -56,7 +56,7 @@ func sortOrders(orders []types.Order, position float64, dir elevio.MotorDirectio
 		}
 	}
 
-	// TODO: someone who knows what this does should comment it
+	// Sort all orders in one iterate of elevator cycle such that cab orders precede hall orders
 	i := 0
 	for j := i + 1; j <= len(sorted); j++ {
 		if j == len(sorted) || sorted[j].Floor != sorted[j-1].Floor {

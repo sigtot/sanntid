@@ -1,3 +1,6 @@
+/*
+Package hotchan defines a channel with automatically expiring items.
+*/
 package hotchan
 
 import (
@@ -33,7 +36,7 @@ type statusMap struct {
 	mu     sync.Mutex
 }
 
-// Start the HotQueue. Initializes channels and starts goroutines managing this hot channel
+// Start the HotQueue. Initializes channels and starts goroutines managing this hot channel.
 func (c *HotChan) Start() {
 	c.Out = make(chan Item, 1024)
 	c.toPurge = make(chan int, 1024)
@@ -45,11 +48,12 @@ func (c *HotChan) Start() {
 	go c.manage()
 }
 
-// Stop sends a stop signal to the goroutine managing the hot channel
+// Stop sends a stop signal to the goroutine managing the hot channel.
 func (c *HotChan) Stop() {
 	c.quit <- 0
 }
 
+// Insert locks the hot channel and inserts the Item argument in the hot channel.
 func (c *HotChan) Insert(item Item) {
 	c.inserting <- 1
 	c.status.mu.Lock()
@@ -67,7 +71,6 @@ func (c *HotChan) Insert(item Item) {
 	c.doneInserting <- 1
 }
 
-// Manages incoming items
 func (c *HotChan) manage() {
 	for {
 		select {
@@ -97,7 +100,7 @@ func (c *HotChan) manage() {
 	}
 }
 
-// Kills an item after it's TTL runs out
+// Kills an item after it's TTL runs out.
 func (c *HotChan) doom(item Item) {
 	<-time.After(item.TTL)
 	c.toPurge <- item.id
