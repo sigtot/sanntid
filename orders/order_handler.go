@@ -125,7 +125,7 @@ func (oh *OrderHandler) GetPrice(call types.Call) int {
 func getNextGoal(orders []types.Order, elev ElevInterface) (types.Order, error) {
 	ordersCopy := make([]types.Order, len(orders))
 	copy(ordersCopy, orders)
-	sortedOrders, err := sortOrders(ordersCopy, elev.GetPos(), elev.GetDir())
+	sortedOrders, err := SortOrders(ordersCopy, elev.GetPos(), elev.GetDir())
 	if err != nil {
 		return types.Order{}, err
 	}

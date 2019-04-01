@@ -19,7 +19,7 @@ func calcPriceFromQueue(newOrder types.Order, orders []types.Order, position flo
 	// Create sorted, unique list of current orders
 	ordersCopy := make([]types.Order, len(orders))
 	copy(ordersCopy, orders)
-	sortedOrders, err := sortOrders(ordersCopy, position, dir)
+	sortedOrders, err := SortOrders(ordersCopy, position, dir)
 	if err != nil {
 		return -1, err
 	}
@@ -28,7 +28,7 @@ func calcPriceFromQueue(newOrder types.Order, orders []types.Order, position flo
 	// Create sorted, unique list of orders with new order included
 	newSortedOrders := make([]types.Order, len(sortedOrders))
 	copy(newSortedOrders, sortedOrders)
-	newSortedOrders, err = sortOrders(append(newSortedOrders, newOrder), position, dir)
+	newSortedOrders, err = SortOrders(append(newSortedOrders, newOrder), position, dir)
 	if err != nil {
 		return -1, err
 	}

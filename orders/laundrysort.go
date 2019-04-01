@@ -6,10 +6,10 @@ import (
 	"github.com/sigtot/sanntid/utils"
 )
 
-func sortOrders(orders []types.Order, position float64, dir elevio.MotorDirection) (sorted []types.Order, err error) {
+func SortOrders(orders []types.Order, position float64, dir elevio.MotorDirection) (sorted []types.Order, err error) {
 	// Choose a starting direction if elevator standing still
 	if dir == elevio.MdStop {
-		panic("sortOrders should never be called with a elevio.MdStop direction")
+		panic("SortOrders should never be called with a elevio.MdStop direction")
 	}
 	// Iterate over one complete elevator cycle
 	floor := roundPositionInDirection(position, dir)

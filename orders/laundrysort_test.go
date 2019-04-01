@@ -1,8 +1,10 @@
 package orders
 
 import (
+	"fmt"
 	"github.com/sigtot/elevio"
 	"github.com/sigtot/sanntid/types"
+	"log"
 	"math/rand"
 	"reflect"
 	"testing"
@@ -66,7 +68,7 @@ func TestSortOrders(t *testing.T) {
 
 		orders = scramble(orders)
 
-		sortedOrders, err := sortOrders(orders, 1, elevio.MdUp)
+		sortedOrders, err := SortOrders(orders, 1, elevio.MdUp)
 		if err != nil {
 			t.Fatalf(err.Error())
 		}
@@ -100,7 +102,7 @@ func TestSortOrdersNice(t *testing.T) {
 
 		orders = scramble(orders)
 
-		sortedOrders, err := sortOrders(orders, 1.5, elevio.MdUp)
+		sortedOrders, err := SortOrders(orders, 1.5, elevio.MdUp)
 		if err != nil {
 			t.Fatalf(err.Error())
 		}
@@ -134,7 +136,7 @@ func TestSortDownwards(t *testing.T) {
 
 		orders = scramble(orders)
 
-		sortedOrders, err := sortOrders(orders, 3, elevio.MdDown)
+		sortedOrders, err := SortOrders(orders, 3, elevio.MdDown)
 		if err != nil {
 			t.Fatalf(err.Error())
 		}
@@ -150,10 +152,29 @@ func TestSortDownwards(t *testing.T) {
 
 func TestSortEmptyQueue(t *testing.T) {
 	var orders []types.Order
-	_, err := sortOrders(orders, 2.0, elevio.MdDown)
+	_, err := SortOrders(orders, 2.0, elevio.MdDown)
 	if err != nil {
 		log.Fatal(err.Error())
 	}
+}
+
+// SortOrders will sort orders that are closest to the current position first.
+func ExampleSortOrders() {
+	orders := []types.Order{
+		{Call: types.Call{Type: types.Cab, Dir: types.InvalidDir, Floor: 1}},
+		{Call: types.Call{Type: types.Cab, Dir: types.InvalidDir, Floor: 2}},
+	}
+
+	pos := 3.0
+	dir := elevio.MdDown
+
+	fmt.Printf("Before: %+v\n", orders)
+	if sortedOrders, err := SortOrders(orders, pos, dir); err == nil {
+		fmt.Printf("After: %+v\n", sortedOrders)
+	}
+	// Output:
+	// Before: [{Call:{Type:0 Floor:1 Dir:-1 ElevatorID:}} {Call:{Type:0 Floor:2 Dir:-1 ElevatorID:}}]
+	// After: [{Call:{Type:0 Floor:2 Dir:-1 ElevatorID:}} {Call:{Type:0 Floor:1 Dir:-1 ElevatorID:}}]
 }
 
 func scramble(orders []types.Order) []types.Order {

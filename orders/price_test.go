@@ -60,7 +60,7 @@ func TestCalcTotalQueueCost(t *testing.T) {
 
 	dir := elevio.MdUp
 	pos := 3.0
-	orders, err := sortOrders(orders, pos, dir)
+	orders, err := SortOrders(orders, pos, dir)
 	if err != nil {
 		log.Fatal(err.Error())
 	}
