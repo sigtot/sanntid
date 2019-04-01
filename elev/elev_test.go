@@ -2,7 +2,6 @@ package elev
 
 import (
 	"github.com/sigtot/elevio"
-	"github.com/sigtot/sanntid/orders"
 	"github.com/sigtot/sanntid/types"
 	"github.com/sigtot/sanntid/utils"
 	"testing"
@@ -23,6 +22,7 @@ func TestStartElevController(t *testing.T) {
 	floorArrivals := make(chan int)
 	go elevio.PollFloorSensor(floorArrivals)
 
+	// TODO: Add wait group
 	_ = StartElevController(goalArrivals, currentGoals, floorArrivals)
 
 	firstOrder := types.Order{Call: types.Call{Type: types.Hall, Floor: 3, Dir: types.Down}}

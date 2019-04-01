@@ -10,6 +10,8 @@ import (
 	"testing"
 )
 
+var laundrySortTestFloorConf = types.FloorConfig{Num: 4, Bottom: 0}
+
 func TestSortOrders(t *testing.T) {
 	for k := 0; k < 100; k++ {
 		orders := []types.Order{
@@ -68,7 +70,7 @@ func TestSortOrders(t *testing.T) {
 
 		orders = scramble(orders)
 
-		sortedOrders, err := SortOrders(orders, 1, elevio.MdUp)
+		sortedOrders, err := SortOrders(orders, 1, elevio.MdUp, laundrySortTestFloorConf)
 		if err != nil {
 			t.Fatalf(err.Error())
 		}
@@ -102,7 +104,7 @@ func TestSortOrdersNice(t *testing.T) {
 
 		orders = scramble(orders)
 
-		sortedOrders, err := SortOrders(orders, 1.5, elevio.MdUp)
+		sortedOrders, err := SortOrders(orders, 1.5, elevio.MdUp, laundrySortTestFloorConf)
 		if err != nil {
 			t.Fatalf(err.Error())
 		}
@@ -136,7 +138,7 @@ func TestSortDownwards(t *testing.T) {
 
 		orders = scramble(orders)
 
-		sortedOrders, err := SortOrders(orders, 3, elevio.MdDown)
+		sortedOrders, err := SortOrders(orders, 3, elevio.MdDown, laundrySortTestFloorConf)
 		if err != nil {
 			t.Fatalf(err.Error())
 		}
@@ -152,7 +154,7 @@ func TestSortDownwards(t *testing.T) {
 
 func TestSortEmptyQueue(t *testing.T) {
 	var orders []types.Order
-	_, err := SortOrders(orders, 2.0, elevio.MdDown)
+	_, err := SortOrders(orders, 2.0, elevio.MdDown, laundrySortTestFloorConf)
 	if err != nil {
 		log.Fatal(err.Error())
 	}
@@ -169,12 +171,12 @@ func ExampleSortOrders() {
 	dir := elevio.MdDown
 
 	fmt.Printf("Before: %+v\n", orders)
-	if sortedOrders, err := SortOrders(orders, pos, dir); err == nil {
+	if sortedOrders, err := SortOrders(orders, pos, dir, laundrySortTestFloorConf); err == nil {
 		fmt.Printf("After: %+v\n", sortedOrders)
 	}
 	// Output:
-	// Before: [{Call:{Type:0 Floor:1 Dir:-1 ElevatorID:}} {Call:{Type:0 Floor:2 Dir:-1 ElevatorID:}}]
-	// After: [{Call:{Type:0 Floor:2 Dir:-1 ElevatorID:}} {Call:{Type:0 Floor:1 Dir:-1 ElevatorID:}}]
+	// Before: [{Call:{Type:0 Top:1 Dir:-1 ElevatorID:}} {Call:{Type:0 Top:2 Dir:-1 ElevatorID:}}]
+	// After: [{Call:{Type:0 Top:2 Dir:-1 ElevatorID:}} {Call:{Type:0 Top:1 Dir:-1 ElevatorID:}}]
 }
 
 func scramble(orders []types.Order) []types.Order {

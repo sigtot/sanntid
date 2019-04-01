@@ -49,3 +49,12 @@ type SoldTo struct {
 type Ack struct {
 	Bid
 }
+
+type FloorConfig struct {
+	Num    int
+	Bottom int
+}
+
+func (ec FloorConfig) Top() int {
+	return ec.Bottom + ec.Num - 1
+}

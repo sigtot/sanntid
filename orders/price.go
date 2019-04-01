@@ -15,11 +15,11 @@ const travelWeight = 1
 // calcPriceFromQueue calculates the cost of newOrder, given the current queue of orders and elevator direction.
 // The trade-off between the cost of delaying the delivery of other orders and the delivery time of newOrder
 // can be tuned using the weights communityWeight and individualWeight.
-func calcPriceFromQueue(newOrder types.Order, orders []types.Order, position float64, dir elevio.MotorDirection) (int, error) {
+func calcPriceFromQueue(newOrder types.Order, orders []types.Order, position float64, dir elevio.MotorDirection, floorConf types.FloorConfig) (int, error) {
 	// Create sorted, unique list of current orders
 	ordersCopy := make([]types.Order, len(orders))
 	copy(ordersCopy, orders)
-	sortedOrders, err := SortOrders(ordersCopy, position, dir)
+	sortedOrders, err := SortOrders(ordersCopy, position, dir, floorConf)
 	if err != nil {
 		return -1, err
 	}
@@ -28,7 +28,7 @@ func calcPriceFromQueue(newOrder types.Order, orders []types.Order, position flo
 	// Create sorted, unique list of orders with new order included
 	newSortedOrders := make([]types.Order, len(sortedOrders))
 	copy(newSortedOrders, sortedOrders)
-	newSortedOrders, err = SortOrders(append(newSortedOrders, newOrder), position, dir)
+	newSortedOrders, err = SortOrders(append(newSortedOrders, newOrder), position, dir, floorConf)
 	if err != nil {
 		return -1, err
 	}

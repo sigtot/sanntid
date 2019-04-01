@@ -14,10 +14,6 @@ import (
 	"time"
 )
 
-const numFloors = 4
-const topFloor = numFloors - 1
-const bottomFloor = 0
-
 const counterDelay = 12000
 const tickInterval = 1000
 const deliveryDelayWeight = 1
@@ -32,6 +28,7 @@ type OrderHandler struct {
 	orders         []types.Order
 	delayedCounter utils.DelayedCounter
 	elev           ElevInterface
+	floorConf      types.FloorConfig
 }
 
 // ElevInterface is used by the order handler to get the current position and direction of the elevator.
@@ -65,7 +62,7 @@ func StartOrderHandler(
 				}
 				// Set next goal
 				oh.orders = append(oh.orders, order)
-				nextGoal, err := getNextGoal(oh.orders, oh.elev)
+				nextGoal, err := getNextGoal(oh.orders, oh.elev, oh.floorConf)
 				utils.OkOrPanic(err)
 				utils.LogOrder(log, moduleName, "Set next goal", nextGoal)
 				currentGoals <- nextGoal
@@ -98,7 +95,7 @@ func StartOrderHandler(
 
 				// Set next goal
 				if len(oh.orders) > 0 {
-					nextGoal, err := getNextGoal(oh.orders, oh.elev)
+					nextGoal, err := getNextGoal(oh.orders, oh.elev, oh.floorConf)
 					utils.LogOrder(log, moduleName, "Set next goal", nextGoal)
 					utils.OkOrPanic(err)
 					currentGoals <- nextGoal
@@ -112,7 +109,7 @@ func StartOrderHandler(
 // GetPrice calculates the price of the given call from the current elevator state, its queue and any accumulated delay
 // penalty based on the time elapsed since the last delivery
 func (oh *OrderHandler) GetPrice(call types.Call) int {
-	price, err := calcPriceFromQueue(types.Order{Call: call}, oh.orders, oh.elev.GetPos(), oh.elev.GetDir())
+	price, err := calcPriceFromQueue(types.Order{Call: call}, oh.orders, oh.elev.GetPos(), oh.elev.GetDir(), oh.floorConf)
 	utils.OkOrPanic(err)
 	if len(oh.orders) > 0 {
 		count := <-oh.delayedCounter.Count
@@ -122,10 +119,10 @@ func (oh *OrderHandler) GetPrice(call types.Call) int {
 }
 
 // getNextGoal finds the next goal floor by sorting the order list and picking out the first element.
-func getNextGoal(orders []types.Order, elev ElevInterface) (types.Order, error) {
+func getNextGoal(orders []types.Order, elev ElevInterface, floorConf types.FloorConfig) (types.Order, error) {
 	ordersCopy := make([]types.Order, len(orders))
 	copy(ordersCopy, orders)
-	sortedOrders, err := SortOrders(ordersCopy, elev.GetPos(), elev.GetDir())
+	sortedOrders, err := SortOrders(ordersCopy, elev.GetPos(), elev.GetDir(), floorConf)
 	if err != nil {
 		return types.Order{}, err
 	}

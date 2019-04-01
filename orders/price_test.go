@@ -7,6 +7,8 @@ import (
 	"testing"
 )
 
+var priceTestFloorConf = types.FloorConfig{Num: 4, Bottom: 0}
+
 func TestCalcPriceFromQueue(t *testing.T) {
 	orders := []types.Order{
 		{Call: types.Call{Type: types.Hall, Dir: types.Up, Floor: 2}},
@@ -17,7 +19,7 @@ func TestCalcPriceFromQueue(t *testing.T) {
 	}
 
 	newOrder := types.Order{Call: types.Call{Type: types.Hall, Dir: types.Down, Floor: 1}}
-	price, err := calcPriceFromQueue(newOrder, orders, 3.0, elevio.MdDown)
+	price, err := calcPriceFromQueue(newOrder, orders, 3.0, elevio.MdDown, priceTestFloorConf)
 	expectedCost := 20
 	if err != nil {
 		log.Fatal(err.Error())
@@ -28,7 +30,7 @@ func TestCalcPriceFromQueue(t *testing.T) {
 
 	// This order already exists, and so should only give individual price
 	oldOrder := types.Order{Call: types.Call{Type: types.Hall, Dir: types.Down, Floor: 2}}
-	price, err = calcPriceFromQueue(oldOrder, orders, 3.0, elevio.MdDown)
+	price, err = calcPriceFromQueue(oldOrder, orders, 3.0, elevio.MdDown, priceTestFloorConf)
 	expectedCost = 4 // (1 travel cost + 3 wait cost) * 1 individualWeight = 4
 	if err != nil {
 		log.Fatal(err.Error())
@@ -39,7 +41,7 @@ func TestCalcPriceFromQueue(t *testing.T) {
 
 	// Order where we are
 	sameFloorOrder := types.Order{Call: types.Call{Type: types.Hall, Dir: types.Down, Floor: 2}}
-	price, err = calcPriceFromQueue(sameFloorOrder, orders, 2.0, elevio.MdDown)
+	price, err = calcPriceFromQueue(sameFloorOrder, orders, 2.0, elevio.MdDown, priceTestFloorConf)
 	expectedCost = 0
 	if err != nil {
 		log.Fatal(err.Error())
@@ -60,7 +62,7 @@ func TestCalcTotalQueueCost(t *testing.T) {
 
 	dir := elevio.MdUp
 	pos := 3.0
-	orders, err := SortOrders(orders, pos, dir)
+	orders, err := SortOrders(orders, pos, dir, priceTestFloorConf)
 	if err != nil {
 		log.Fatal(err.Error())
 	}
@@ -76,7 +78,7 @@ func TestCalcPriceFromEmptyQueue(t *testing.T) {
 	var orders []types.Order
 
 	newOrder := types.Order{Call: types.Call{Type: types.Hall, Dir: types.Down, Floor: 1}}
-	price, err := calcPriceFromQueue(newOrder, orders, 3.0, elevio.MdDown)
+	price, err := calcPriceFromQueue(newOrder, orders, 3.0, elevio.MdDown, priceTestFloorConf)
 	expectedCost := 2
 	if err != nil {
 		log.Fatal(err.Error())

@@ -6,7 +6,7 @@ import (
 	"github.com/sigtot/sanntid/utils"
 )
 
-func SortOrders(orders []types.Order, position float64, dir elevio.MotorDirection) (sorted []types.Order, err error) {
+func SortOrders(orders []types.Order, position float64, dir elevio.MotorDirection, floorConf types.FloorConfig) (sorted []types.Order, err error) {
 	// Choose a starting direction if elevator standing still
 	if dir == elevio.MdStop {
 		panic("SortOrders should never be called with a elevio.MdStop direction")
@@ -47,9 +47,9 @@ func SortOrders(orders []types.Order, position float64, dir elevio.MotorDirectio
 		}
 
 		// Move to next iterate in elevator cycle. Reverse direction if at floor bounds
-		if floor >= topFloor && dir == elevio.MdUp {
+		if floor >= floorConf.Top() && dir == elevio.MdUp {
 			dir = elevio.MdDown
-		} else if floor <= bottomFloor && dir == elevio.MdDown {
+		} else if floor <= floorConf.Bottom && dir == elevio.MdDown {
 			dir = elevio.MdUp
 		} else {
 			floor += int(dir)

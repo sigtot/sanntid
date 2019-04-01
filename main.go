@@ -2,6 +2,7 @@ package main
 
 import (
 	"flag"
+	"fmt"
 	"github.com/sigtot/elevio"
 	"github.com/sigtot/sanntid/buttons"
 	"github.com/sigtot/sanntid/buyer"
@@ -21,6 +22,9 @@ import (
 	"time"
 )
 
+const defaultNumFloors = 4
+const defaultBottomFloor = 0
+
 const dbName = "orderwatcher.db"
 const dbPerms = 0600
 const dbTimeout = 300
@@ -32,9 +36,15 @@ const defaultElevPort = 15657
 func main() {
 	rand.Seed(time.Now().UnixNano())
 
-	// Read elevator server port flag
-	var elevPort = flag.Int("port", defaultElevPort, "port for connecting to the elevator server")
+	// Parse flags
+	var floorConf types.FloorConfig
+	floorConf.Num = *flag.Int("numfloors", defaultNumFloors, "number of floors in the elevator")
+	floorConf.Bottom = *flag.Int("bottomfloor", defaultBottomFloor, "bottom floor of the elevator")
+	elevPort := *flag.Int("port", defaultElevPort, "port for connecting to the elevator server")
 	flag.Parse()
+
+	fmt.Printf("Floorconf: %+v\n", floorConf)
+	fmt.Printf("Top floor: %d\n", floorConf.Top())
 
 	log := logrus.New()
 	utils.Log(log, moduleName, "Starting elevator")
@@ -46,7 +56,7 @@ func main() {
 	floorArrivals := make(chan int)
 	quitElev := make(chan int)
 	go elevio.PollFloorSensor(floorArrivals)
-	elevator := elev.StartElevController(goalArrivals, currentGoals, floorArrivals, *elevPort, quitElev, &wg)
+	elevator := elev.StartElevController(goalArrivals, currentGoals, floorArrivals, elevPort, quitElev, &wg)
 
 	callsForSale := make(chan types.Call)
 	buttonEvents := make(chan elevio.ButtonEvent)
