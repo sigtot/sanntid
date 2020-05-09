@@ -4,6 +4,8 @@
 
 > Elevator Project for TTK4145 Real-time Programming
 
+This repo contains implementation of a system for connecting n elevators and n elevator panels installed on n computers over a network connection in such a way that orders are distributed evenly and efficiently to the elevators. A large effort has been put into fault tolerance due to the requirement that no order is lost after it has been accepted. This requirement applies even in the case of network failure, power outages, program crashes or situations with severe packet loss. 
+
 ![simulator](/elev.gif)
 
 ## Design
